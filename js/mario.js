@@ -40,6 +40,9 @@ function create() {
 
     cursors = game.input.keyboard.createCursorKeys();
 
+    //game.camera.x = (game.width * -0.5);
+    //game.camera.y = (game.height * -0.5);
+    //game.world.scale.set(0.5);
 }
 
 function update() {
