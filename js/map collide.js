@@ -7,10 +7,10 @@ function preload() {
     //game.load.image('tiles', 'assets/tilemaps/tiles/super_mario.png');
     game.load.image('player', 'assets/sprites/phaser-dude.png');
 
-    game.load.tilemap('level1', 'assets/tilemaps/maps/alien-platformer-level01.json', null, Phaser.Tilemap.TILED_JSON);
-    game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles.png');
-    game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items.png');
-    game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground.png');
+    game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-01.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
+    game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
+    game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
 }
 
 var map;
@@ -20,6 +20,8 @@ var p;
 var cursors;
 
 var worldScale = 1;
+
+var playerDrawScale = 2.0;
 
 function create() {
 
@@ -33,9 +35,9 @@ function create() {
     map = game.add.tilemap('level1');
 
     //map.addTilesetImage('SuperMarioBros-World1-1', 'tiles');
-    map.addTilesetImage('spritesheet_tiles', 'tiles');
-    map.addTilesetImage('spritesheet_items', 'items');
-    map.addTilesetImage('spritesheet_ground', 'ground');
+    map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
+    map.addTilesetImage('spritesheet_items_64x64', 'items');
+    map.addTilesetImage('spritesheet_ground_64x64', 'ground');
 
     //  14 = ? block
     // map.setCollisionBetween(14, 15);
@@ -51,8 +53,8 @@ function create() {
     //map.setTileLocationCallback(2, 0, 1, 1, hitCoin, this);
     
     //layer = map.createLayer('World1');
-    layer = map.createLayer('nonpassableBlocksLayer');
-    layer2 = map.createLayer('passableBlocksLayer');
+    layer = map.createLayer('layer02-nonpassable');
+    layer2 = map.createLayer('layer03-foreground-passable');
     //layer3 = map.createLayer('objectsLayer');
 
     map.setCollisionBetween(0, 200, true, layer, true);
@@ -68,13 +70,15 @@ function create() {
     layer2.resizeWorld();
     //layer3.resizeWorld();
 
-    p = game.add.sprite(32, 32, 'player');
+    p = game.add.sprite(128, 128, 'player');
+    p.scale.setTo(playerDrawScale, playerDrawScale);
+    p.anchor.setTo(.5, .5);
 
     game.physics.enable(p);
 
-    game.physics.arcade.gravity.y = 250;
+    game.physics.arcade.gravity.y = 500;
 
-    p.body.bounce.y = 0.2;
+    p.body.bounce.y = 0.05;
     p.body.linearDamping = 1;
     p.body.collideWorldBounds = true;
 
@@ -94,7 +98,7 @@ function update() {
     {
         if (p.body.onFloor())
         {
-            p.body.velocity.y = -200;
+            p.body.velocity.y = -500;
         }
     }
 
