@@ -1,3 +1,4 @@
+/// <reference path="Phaser.js" />
 
 var game = new Phaser.Game(1280, 720, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
@@ -6,9 +7,12 @@ function preload() {
     //game.load.tilemap('mario', 'assets/tilemaps/maps/super_mario.json', null, Phaser.Tilemap.TILED_JSON);
     //game.load.image('tiles', 'assets/tilemaps/tiles/super_mario.png');
     //game.load.image('player', 'assets/sprites/phaser-dude.png');
+    game.load.audio('jump', 'assets/audio/jump.wav');
+    game.load.audio('gemSound', 'assets/audio/coin.wav');
 
     game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
     game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
+    game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/tilemaps/tile/spritesheet_players.xml');
 
     game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-01.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
@@ -18,7 +22,9 @@ function preload() {
 
 var map;
 var tileset;
-var layerNonpassable;
+//var layerNonpassable;
+
+var gems;
 
 var player;
 var cursors;
@@ -54,25 +60,40 @@ function create() {
     //bgtile.scrollFactorX = 1.15;
 
     // background layer
-    layer = map.createLayer('layer02-nonpassable');
-    map.setCollisionBetween(0, 200, true, layer, true);
-    layer.resizeWorld();
+    layer01 = map.createLayer('layer01-background-passable');
+    layer01.alpha = 1.0;
+    layer01.resizeWorld();
+
+    // non-passable blocks layer
+    layer02 = map.createLayer('layer02-nonpassable');
+    layer02.alpha = 1.0;
+    map.setCollisionBetween(0, 400, true, layer02, true);
+
+    // gem stuff... http://phaser.io/examples/v2/tilemaps/tile-callbacks
+    map.setTileIndexCallback(134, collectGem, this);//, layer02);
+    map.setTileIndexCallback(142, collectGem, this);//, layer02);
+    map.setTileIndexCallback(149, collectGem, this);//, layer02);
+    map.setTileIndexCallback(157, collectGem, this);//, layer02);
+
+    layer02.resizeWorld();
     //map.setCollision();
 
     //  Un-comment this on to see the collision tiles
     //layer.debug = true;
     //layer2.debug = true;
     
-    // add player between
+    // add player between background and foreground layers
     player = game.add.sprite(64, 64, 'player', 'alienBlue_front.png');
     player.scale.setTo(playerDrawScale, playerDrawScale);
     player.anchor.setTo(.5, .5);
+    
     player.animations.add('walk', Phaser.Animation.generateFrameNames('alienBeige_walk', 1, 2, '.png'), 10);
     player.animations.add('swim', Phaser.Animation.generateFrameNames('alienBeige_swim', 1, 2, '.png'), 10);
     player.animations.add('climb', Phaser.Animation.generateFrameNames('alienBeige_climb', 1, 2, '.png'), 10);
 
     game.physics.enable(player);
     game.physics.arcade.gravity.y = 500;
+    player.body.setSize(64, 64, 0, 46);
     player.body.bounce.y = 0.05;
     player.body.linearDamping = 1;
     player.body.collideWorldBounds = true;
@@ -80,14 +101,38 @@ function create() {
     game.camera.follow(player);
 
     // add foreground semi-transparent layer (water, lava, clouds, etc.)
-    layer2 = map.createLayer('layer03-foreground-passable-semitransparent');
-    layer2.alpha = 0.5;
-    layer2.resizeWorld();
+    layer03 = map.createLayer('layer03-foreground-passable-semitransparent');
+    layer03.alpha = 0.5;
+    layer03.resizeWorld();
+
+    //
+    layer04 = map.createLayer('layer04-foreground-passable-opaque');
+    layer04.alpha = 1.0;
+    layer04.resizeWorld();
+
+    layer05 = map.createLayer('layer05-objects');
+    layer05.alpha = 1.0;
+    //map.setCollisionBetween(0, 400, true, layer05, true);
+    layer05.resizeWorld();
 
     // TODO: add HUD stuff here
 
     // input
     cursors = game.input.keyboard.createCursorKeys();
+
+
+
+    //gems = game.add.group();
+    //gems.enableBody = true;
+    //142 157 134 149
+    //map.createFromObjects('layer05-objects', 142, 'gem', 0, true, false, gems);
+    //map.createFromObjects('layer05-objects', 157, 'gem', 0, true, false, gems);
+    //map.createFromObjects('layer05-objects', 134, 'gem', 0, true, false, gems);
+    //map.createFromObjects('layer05-objects', 149, 'gem', 0, true, false, gems);
+
+    // audio
+    jumpsound = this.game.add.audio('jump');
+    gemSound = this.game.add.audio('coinSound');
 }
 
 function update() {
@@ -95,7 +140,9 @@ function update() {
     sky.tilePosition.x = -(game.camera.x * 0.25);
     sky.tilePosition.y = -(game.camera.y * 0.25);
 
-    game.physics.arcade.collide(player, layer);
+    game.physics.arcade.collide(player, layer02);
+
+    //game.physics.arcade.overlap(player, gems, collectGems, null, this);
 
     player.body.velocity.x = 0;
 
@@ -104,6 +151,7 @@ function update() {
         if (player.body.onFloor())
         {
             player.body.velocity.y = -500;
+            jumpsound.play();
         }
     }
 
@@ -146,7 +194,7 @@ function update() {
     // set our world scale as needed
     game.world.scale.set(worldScale);
 }
-z
+
 function render() {
 
     // game.debug.body(p);
@@ -154,13 +202,13 @@ function render() {
 
 }
 
-function hitCoin(sprite, tile) {
+function collectGem(sprite, tile) {
 
-    tile.alpha = 0.2;
+    gemSound.play();
+    //gem.kill();
 
+    tile.alpha = 0.1;
     layer.dirty = true;
-
     return false;
-
 }
 
