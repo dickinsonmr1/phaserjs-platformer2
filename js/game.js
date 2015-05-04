@@ -14,12 +14,17 @@ function preload() {
     //game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
     game.load.image('sky', 'assets/sprites/backgrounds/colored_land.png');
     game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
-    game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/tilemaps/tile/spritesheet_players.xml');
+    //game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/tilemaps/tile/spritesheet_players.xml');
+
+    game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
+
+    game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
 
     game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-01.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
     game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
     game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
+    game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
 }
 
 var map;
@@ -31,6 +36,7 @@ var layer02;
 var layer03;
 var layer04;
 var layer05;
+var layer06;
 
 var players = ['alienBeige', 'alienBlue', 'alienGreen', 'alienPink', 'alienYellow'];
 var selectedPlayerIndex = 0;
@@ -39,6 +45,10 @@ var gems;
 
 var player;
 var cursors;
+
+var enemy;
+var enemies;
+var enemySpawnPoints;
 
 var tileKeyBlueKey = 141;
 var tileKeyGemGreen = 142;
@@ -65,6 +75,7 @@ function create() {
     map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
     map.addTilesetImage('spritesheet_items_64x64', 'items');
     map.addTilesetImage('spritesheet_ground_64x64', 'ground');
+    map.addTilesetImage('spritesheet_enemies_64x64', 'enemyTiles');
 
     //map.setCollisionBetween(27, 29);
     //map.setCollision(40);
@@ -114,18 +125,29 @@ function create() {
     player.body.linearDamping = 1;
     player.body.collideWorldBounds = true;
 
+    player.frameName = players[selectedPlayerIndex] + "_stand.png";
+
+
+
     game.camera.follow(player);
 
-    // add foreground semi-transparent layer (water, lava, clouds, etc.)
+    //---------------------------------------------------------------------------------------------------
+    // foreground semi-transparent layer (water, lava, clouds, etc.)
+    //---------------------------------------------------------------------------------------------------
     layer03 = map.createLayer('layer03-foreground-passable-semitransparent');
     layer03.alpha = 0.5;
     layer03.resizeWorld();
 
-    //
+    //---------------------------------------------------------------------------------------------------
+    // FOREGROUND PASSABLE OPAQUE LAYER
+    //---------------------------------------------------------------------------------------------------
     layer04 = map.createLayer('layer04-foreground-passable-opaque');
     layer04.alpha = 1.0;
     layer04.resizeWorld();
 
+    //---------------------------------------------------------------------------------------------------
+    // OBJECTS
+    //---------------------------------------------------------------------------------------------------
     layer05 = map.createLayer('layer05-objects');
     layer05.alpha = 0.75;
     //map.setCollisionBetween(0, 400, true, layer05, true);
@@ -145,6 +167,31 @@ function create() {
     map.setCollision(tileKeyBlueKey, true, layer05, true);
     map.setTileIndexCallback(tileKeyBlueKey, collectKey, this, layer05);
 
+    // green flag no wind: 146
+
+    layer05.resizeWorld();
+
+    //---------------------------------------------------------------------------------------------------
+    // ENEMIES
+    //---------------------------------------------------------------------------------------------------
+    layer06 = map.createLayer('layer06-enemies');
+    layer06.alpha = 0.25;
+    enemies = game.add.group();
+    enemies.enableBody = true;    
+    map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemies, enemy);
+    //map.createFromTiles(297, null, 'ghost', 'layer06-enemies', enemies, enemy);
+    layer06.resizeWorld();
+
+    //enemySpawnPoints.forEach(function (item) {
+    //    var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
+    //    //enemy.scale.setTo(playerDrawScale, playerDrawScale);
+    //    enemy.anchor.setTo(.5, .5);
+    //}, this);
+
+    //enemies.callAll();
+    //enemies.callAll('animations.add', 'animations', players[selectedPlayerIndex] + 'walk', [1, 2], 10, true);
+    //enemies.callAll('animations.play', 'animations', players[selectedPlayerIndex] + 'walk');
+
     //gems = game.add.group();
     //gems.enableBody = true;
     //map.createFromObjects('layer05-objects', 134, 'gem', 0, true, false, gems);
@@ -152,25 +199,12 @@ function create() {
     //map.createFromObjects('layer05-objects', 149, 'gem', 0, true, false, gems);
     //map.createFromObjects('layer05-objects', 157, 'gem', 0, true, false, gems);
 
-    player.frameName = players[selectedPlayerIndex] + "_stand.png";
-
-    layer05.resizeWorld();
 
     // TODO: add HUD stuff here
 
     // input
     cursors = game.input.keyboard.createCursorKeys();
-
-
-
-    //gems = game.add.group();
-    //gems.enableBody = true;
-    //142 157 134 149
-    //map.createFromObjects('layer05-objects', 142, 'gem', 0, true, false, gems);
-    //map.createFromObjects('layer05-objects', 157, 'gem', 0, true, false, gems);
-    //map.createFromObjects('layer05-objects', 134, 'gem', 0, true, false, gems);
-    //map.createFromObjects('layer05-objects', 149, 'gem', 0, true, false, gems);
-
+    
     // audio
     jumpsound = this.game.add.audio('jump');
     gemSound = this.game.add.audio('gemSound');
@@ -184,6 +218,8 @@ function update() {
 
     game.physics.arcade.collide(player, layer02);
     game.physics.arcade.collide(player, layer05);
+    game.physics.arcade.collide(enemies, layer02);
+
 
     //game.physics.arcade.overlap(player, gems, collectGems, null, this);
 
