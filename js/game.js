@@ -19,6 +19,7 @@ var selectedPlayerIndex = 0;
 var gems;
 
 var player;
+var playerSpaceShip;
 var cursors;
 
 var enemy;
@@ -62,16 +63,19 @@ function loadAudio() {
 }
 
 function loadSprites() {
+
+    // background image
     //game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
     game.load.image('sky', 'assets/sprites/backgrounds/colored_grass.png');
     //game.load.image('sky', 'assets/sprites/backgrounds/blue_land.png');
-    game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
-    //game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/tilemaps/tile/spritesheet_players.xml');
 
+    // spritesheets for game objects (not in the game map)
+    game.load.atlasXML('playerSprites', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
     game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
-
     game.load.atlasXML('tileObjectSprites', 'assets/sprites/objects/spritesheet_complete.png', 'assets/sprites/objects/spritesheet_complete.xml');
+    game.load.atlasXML('alienShipSprites', 'assets/sprites/ships/spritesheet_spaceships.png', 'assets/sprites/ships/spritesheet_spaceships.xml');
 
+    // initial placeholders for animated objects
     game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
     game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
 
@@ -79,10 +83,12 @@ function loadSprites() {
 
 function loadTilemap() {
     // tilemap for level building
-    game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
+    //game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
     game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
     game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
+    game.load.image('platformerRequestTiles', 'assets/tilemaps/tiles/platformer-requests-sheet_64x64.png');
     game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
 }
 
@@ -103,6 +109,7 @@ function create() {
     map.addTilesetImage('spritesheet_items_64x64', 'items');
     map.addTilesetImage('spritesheet_ground_64x64', 'ground');
     map.addTilesetImage('spritesheet_enemies_64x64', 'enemyTiles');
+    map.addTilesetImage('platformer-requests-sheet_64x64', 'platformerRequestTiles');
 
     //map.setCollisionBetween(27, 29);
     //map.setCollision(40);
@@ -124,8 +131,8 @@ function create() {
     layer02 = map.createLayer('layer02-nonpassable');
     layer02.alpha = 1.0;
     //map.setCollisionBetween(0, 133, true, layer02, true);
-    map.setCollisionBetween(0, 133, true, layer02, true);
-    map.setCollisionBetween(158, 400, true, layer02, true);
+    map.setCollisionBetween(0, 2000, true, layer02, true);
+    //map.setCollisionBetween(158, 400, true, layer02, true);
 
     layer02.resizeWorld();
     //map.setCollision();
@@ -135,7 +142,9 @@ function create() {
     //layer2.debug = true;
     
     // add player between background and foreground layers
-    player = game.add.sprite(64, 64, 'player', 'alienBlue_front.png');
+    playerSpaceShip = game.add.sprite(300, 300, 'alienShipSprites', 'shipBlue_manned.png');
+
+    player = game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
     player.scale.setTo(playerDrawScale, playerDrawScale);
     player.anchor.setTo(.5, .5);
     
