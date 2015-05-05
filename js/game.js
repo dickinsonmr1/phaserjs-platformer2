@@ -2,31 +2,6 @@
 
 var game = new Phaser.Game(1280, 720, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
-function preload() {
-
-    //game.load.tilemap('mario', 'assets/tilemaps/maps/super_mario.json', null, Phaser.Tilemap.TILED_JSON);
-    //game.load.image('tiles', 'assets/tilemaps/tiles/super_mario.png');
-    //game.load.image('player', 'assets/sprites/phaser-dude.png');
-    game.load.audio('jump', 'assets/audio/jump.wav');
-    game.load.audio('gemSound', 'assets/audio/coin.wav');
-    game.load.audio('key', 'assets/audio/key.wav');
-
-    //game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
-    game.load.image('sky', 'assets/sprites/backgrounds/colored_land.png');
-    game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
-    //game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/tilemaps/tile/spritesheet_players.xml');
-
-    game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
-
-    game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
-
-    game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-01.json', null, Phaser.Tilemap.TILED_JSON);
-    game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
-    game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
-    game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
-    game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
-}
-
 var map;
 var tileset;
 //var layerNonpassable;
@@ -50,16 +25,68 @@ var enemy;
 var enemies;
 var enemySpawnPoints;
 
+var spring;
+var spring2;
+var springs;
+
 var tileKeyBlueKey = 141;
 var tileKeyGemGreen = 142;
 var tileKeyGemRed = 157;
 var tileKeyGemYellow = 134;
 var tileKeyGemBlue = 149;
+var tileKeySpring = 266;
 
 
 var worldScale = 1;
 
 var playerDrawScale = 0.50;
+
+
+function preload() {
+
+    loadAudio();
+
+    loadSprites();
+
+    loadTilemap();
+}
+
+function loadAudio() {
+    //game.load.tilemap('mario', 'assets/tilemaps/maps/super_mario.json', null, Phaser.Tilemap.TILED_JSON);
+    //game.load.image('tiles', 'assets/tilemaps/tiles/super_mario.png');
+    //game.load.image('player', 'assets/sprites/phaser-dude.png');
+    game.load.audio('jump', 'assets/audio/jump.wav');
+    game.load.audio('gemSound', 'assets/audio/coin.wav');
+    game.load.audio('key', 'assets/audio/key.wav');
+    game.load.audio('springSound', 'assets/audio/spring.wav');
+}
+
+function loadSprites() {
+    //game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
+    game.load.image('sky', 'assets/sprites/backgrounds/colored_grass.png');
+    //game.load.image('sky', 'assets/sprites/backgrounds/blue_land.png');
+    game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
+    //game.load.atlasXML('player', 'assets/sprites/player/spritesheet_players.png', 'assets/tilemaps/tile/spritesheet_players.xml');
+
+    game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
+
+    game.load.atlasXML('tileObjectSprites', 'assets/sprites/objects/spritesheet_complete.png', 'assets/sprites/objects/spritesheet_complete.xml');
+
+    game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
+    game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
+
+}
+
+function loadTilemap() {
+    // tilemap for level building
+    game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
+    game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
+    game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
+    game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
+}
+
+
 
 function create() {
 
@@ -67,7 +94,7 @@ function create() {
 
     game.stage.backgroundColor = '#787878';
 
-    sky = game.add.tileSprite(0, 0, 20480, 4096, 'sky');
+    sky = game.add.tileSprite(0, 0, 20480, 1024, 'sky');
     sky.fixedtoCamera = true;
 
     map = game.add.tilemap('level1');
@@ -127,23 +154,19 @@ function create() {
 
     player.frameName = players[selectedPlayerIndex] + "_stand.png";
 
-
-
     game.camera.follow(player);
 
     //---------------------------------------------------------------------------------------------------
-    // foreground semi-transparent layer (water, lava, clouds, etc.)
+    // ENEMIES
     //---------------------------------------------------------------------------------------------------
-    layer03 = map.createLayer('layer03-foreground-passable-semitransparent');
-    layer03.alpha = 0.5;
-    layer03.resizeWorld();
-
-    //---------------------------------------------------------------------------------------------------
-    // FOREGROUND PASSABLE OPAQUE LAYER
-    //---------------------------------------------------------------------------------------------------
-    layer04 = map.createLayer('layer04-foreground-passable-opaque');
-    layer04.alpha = 1.0;
-    layer04.resizeWorld();
+    layer06 = map.createLayer('layer06-enemies');
+    layer06.alpha = 0.25;
+    enemies = game.add.group();    
+    map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemies, enemy);
+    //map.createFromTiles(297, null, 'ghost', 'layer06-enemies', enemies, enemy);
+    layer06.resizeWorld();
+    enemies.enableBody = true;
+    game.physics.enable(enemies);
 
     //---------------------------------------------------------------------------------------------------
     // OBJECTS
@@ -169,18 +192,50 @@ function create() {
 
     // green flag no wind: 146
 
+    springs = game.add.group();
+    //springs.enableBody = true;
+    //spring2 = game.add.sprite(64, 64, 'tileObjectSprites', 'spring0.png');
+    //spring2.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+    
+    ////spring.animation.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+    
+    
+
+    
+
+    map.setCollision(tileKeySpring, true, layer05, true);
+    map.setTileIndexCallback(tileKeySpring, touchSpring, this, layer05);
+    
+    map.createFromTiles(tileKeySpring, null, 'tileObjectSprites', 'layer05-objects', springs, spring);
+    springs.forEach(function (item) {
+    //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+    //item.animations.play('springAnimation');
+    //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
+        item.scale.setTo(0.5, 0.5);
+        item.anchor.setTo(0, 0);
+        //item.body.setSize(64, 64, 0, 32);
+        }, this);
+
+    springs.callAll('animations.add', 'animations', 'springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 2, true, false);
+    springs.callAll('play', null, 'springAnimation');
+
     layer05.resizeWorld();
 
+
     //---------------------------------------------------------------------------------------------------
-    // ENEMIES
+    // foreground semi-transparent layer (water, lava, clouds, etc.)
+        //---------------------------------------------------------------------------------------------------
+    layer03 = map.createLayer('layer03-foreground-passable-semitransparent');
+    layer03.alpha = 0.5;
+    layer03.resizeWorld();
+
+        //---------------------------------------------------------------------------------------------------
+    // FOREGROUND PASSABLE OPAQUE LAYER
     //---------------------------------------------------------------------------------------------------
-    layer06 = map.createLayer('layer06-enemies');
-    layer06.alpha = 0.25;
-    enemies = game.add.group();
-    enemies.enableBody = true;    
-    map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemies, enemy);
-    //map.createFromTiles(297, null, 'ghost', 'layer06-enemies', enemies, enemy);
-    layer06.resizeWorld();
+    layer04 = map.createLayer('layer04-foreground-passable-opaque');
+    layer04.alpha = 1.0;
+    layer04.resizeWorld();
+
 
     //enemySpawnPoints.forEach(function (item) {
     //    var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
@@ -209,18 +264,31 @@ function create() {
     jumpsound = this.game.add.audio('jump');
     gemSound = this.game.add.audio('gemSound');
     keySound = this.game.add.audio('key');
+    springSound = this.game.add.audio('springSound');
+    springSound.allowMultiple = false;
+}
+
+function createMap() {
+
 }
 
 function update() {
 
     sky.tilePosition.x = -(game.camera.x * 0.25);
-    sky.tilePosition.y = -(game.camera.y * 0.05);
+    sky.tilePosition.y = -(game.camera.y * 0.05) + 250;
 
     game.physics.arcade.collide(player, layer02);
     game.physics.arcade.collide(player, layer05);
     game.physics.arcade.collide(enemies, layer02);
+    game.physics.arcade.collide(enemies, enemies);
 
+    game.physics.arcade.collide(player, enemies);
 
+    //game.physics.arcade.collide(springs, player);
+    //game.physics.arcade.collide(springs, layer02);
+    
+
+    //spring2.animations.play('springAnimation');
     //game.physics.arcade.overlap(player, gems, collectGems, null, this);
 
     player.body.velocity.x = 0;
@@ -346,6 +414,29 @@ function collectKey(sprite, tile) {
         map.setLayer(layer05);
     }
     return false;
+}
+
+function touchSpring(sprite, tile) {
+
+    //if(springSound.)
+    //if (tile.alpha > 0) {
+    player.body.velocity.y = -650;
+    springSound.play();
+
+    //spring.animations.play('springAnimation');
+
+        //map.removeTile(tile.x, tile.y);
+
+    //    tile.alpha = 0;
+    //    tile.collideUp = false;
+    //    tile.collideDown = false;
+    //    tile.collideLeft = false;
+    //    tile.collideRight = false;
+    //    layer05.dirty = true;
+    //    map.dirty = true;
+    //    map.setLayer(layer05);
+    //}
+    //return false;
 }
 
 
