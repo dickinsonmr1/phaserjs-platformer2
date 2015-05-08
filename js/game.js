@@ -41,6 +41,7 @@ var tileKeySpring = 266;
 var worldScale = 1;
 
 var playerDrawScale = 0.50;
+var enemyDrawScale = 1;
 
 
 function preload() {
@@ -74,6 +75,7 @@ function loadSprites() {
     game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
     game.load.atlasXML('tileObjectSprites', 'assets/sprites/objects/spritesheet_complete.png', 'assets/sprites/objects/spritesheet_complete.xml');
     game.load.atlasXML('alienShipSprites', 'assets/sprites/ships/spritesheet_spaceships.png', 'assets/sprites/ships/spritesheet_spaceships.xml');
+    game.load.atlasXML('alienShipLaserSprites', 'assets/sprites/ships/spritesheet_lasers.png', 'assets/sprites/ships/spritesheet_lasers.xml');
 
     // initial placeholders for animated objects
     game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
@@ -83,8 +85,8 @@ function loadSprites() {
 
 function loadTilemap() {
     // tilemap for level building
-    //game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
-    game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
+    game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
+    //game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
     game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
     game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
     game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
@@ -143,6 +145,11 @@ function create() {
     
     // add player between background and foreground layers
     playerSpaceShip = game.add.sprite(300, 300, 'alienShipSprites', 'shipBlue_manned.png');
+    var dome = game.add.sprite(325, 285, 'alienShipSprites', 'dome.png');
+    game.add.sprite(325, 450, 'alienShipLaserSprites', 'laserBlue3.png');
+    game.add.sprite(325, 470, 'alienShipLaserSprites', 'laserBlue3.png');
+    game.add.sprite(325, 490, 'alienShipLaserSprites', 'laserBlue3.png');
+
 
     player = game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
     player.scale.setTo(playerDrawScale, playerDrawScale);
@@ -174,8 +181,18 @@ function create() {
     map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemies, enemy);
     //map.createFromTiles(297, null, 'ghost', 'layer06-enemies', enemies, enemy);
     layer06.resizeWorld();
-    enemies.enableBody = true;
+
     game.physics.enable(enemies);
+
+    enemies.forEach(function (enemy) {
+        enemy.enableBody = true;
+        enemy.body.collideWorldBounds = true;
+        enemy.isFacingRight = true;
+    }, this);
+
+    //enemies.enableBody = true;
+    //enemies.body.collideWorldBounds = true;
+    
 
     //---------------------------------------------------------------------------------------------------
     // OBJECTS
@@ -282,9 +299,17 @@ function createMap() {
 }
 
 function update() {
-
     sky.tilePosition.x = -(game.camera.x * 0.25);
     sky.tilePosition.y = -(game.camera.y * 0.05) + 250;
+
+    updatePhysics();
+    updatePlayer();
+    processInput();
+
+    updateEnemies();
+}
+
+function updatePhysics() {
 
     game.physics.arcade.collide(player, layer02);
     game.physics.arcade.collide(player, layer05);
@@ -293,26 +318,19 @@ function update() {
 
     game.physics.arcade.collide(player, enemies);
 
-    //game.physics.arcade.collide(springs, player);
-    //game.physics.arcade.collide(springs, layer02);
-    
+}
 
-    //spring2.animations.play('springAnimation');
-    //game.physics.arcade.overlap(player, gems, collectGems, null, this);
-
+function updatePlayer() {
     player.body.velocity.x = 0;
 
-    if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W) || game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
-    {
-        if (player.body.onFloor())
-        {
+    if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W) || game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+        if (player.body.onFloor()) {
             player.body.velocity.y = -500;
             jumpsound.play();
         }
     }
 
-    if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A))
-    {
+    if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
         //player.body.velocity.x = -150;
         player.body.velocity.x = -200;
         player.anchor.setTo(.5, .5);
@@ -320,8 +338,7 @@ function update() {
         player.scale.y = playerDrawScale
         player.animations.play(players[selectedPlayerIndex] + 'walk');
     }
-    else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D))
-    {
+    else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
         //player.body.velocity.x = 150;
         player.body.velocity.x = 200;
         player.anchor.setTo(.5, .5);
@@ -341,13 +358,16 @@ function update() {
         //player.frame = 4;
     }
 
-   
     if (player.body.onFloor()) {
         //player.frameName = "alienBeige_duck.png";
     }
     else {
         player.frameName = players[selectedPlayerIndex] + "_jump.png";
     }
+}
+
+function processInput() {
+
 
     if (game.input.keyboard.isDown(Phaser.Keyboard.NUMPAD_0)) {
         selectedPlayerIndex = 0;
@@ -378,6 +398,30 @@ function update() {
 
     // set our world scale as needed
     game.world.scale.set(worldScale);
+}
+
+function updateEnemies(){
+    enemies.forEach(function (enemy) {
+        
+        if (enemy.isFacingRight) {
+
+            //var tile = layer02.getTile(enemy.body.x, enemy.body.y);
+            //if(layer02.get)
+
+            enemy.scale.x = -enemyDrawScale;
+            enemy.body.velocity.x = 200;
+        }
+        if (enemy.isFacingLeft) {
+            enemy.body.velocity.x = -200;
+            enemy.scale.x = enemyDrawScale;
+        }
+        //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+        //item.animations.play('springAnimation');
+        //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
+        //item.scale.setTo(0.5, 0.5);
+        //item.anchor.setTo(0, 0);
+        //item.body.setSize(64, 64, 0, 32);
+    }, this);
 }
 
 function render() {
