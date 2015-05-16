@@ -43,6 +43,8 @@ var worldScale = 1;
 var playerDrawScale = 0.50;
 var enemyDrawScale = 1;
 
+var enemySpeed = 200;
+
 
 function preload() {
 
@@ -144,8 +146,8 @@ function create() {
     //layer2.debug = true;
     
     // add player between background and foreground layers
-    playerSpaceShip = game.add.sprite(300, 300, 'alienShipSprites', 'shipBlue_manned.png');
-    var dome = game.add.sprite(325, 285, 'alienShipSprites', 'dome.png');
+    playerSpaceShip = game.add.sprite(300, 300, 'alienShipSprites', 'shipBeige.png');
+    //var dome = game.add.sprite(325, 285, 'alienShipSprites', 'dome.png');
     game.add.sprite(325, 450, 'alienShipLaserSprites', 'laserBlue3.png');
     game.add.sprite(325, 470, 'alienShipLaserSprites', 'laserBlue3.png');
     game.add.sprite(325, 490, 'alienShipLaserSprites', 'laserBlue3.png');
@@ -403,16 +405,30 @@ function processInput() {
 function updateEnemies(){
     enemies.forEach(function (enemy) {
         
+        
+        //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
+
+        if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
+        {
+            enemy.isFacingRight = false;           
+        }
+
+        if (enemy.body.blocked.left && !enemy.isFacingRight)//.body.velocity.x < 0)
+        {
+            enemy.isFacingRight = true;
+        }
+
+
         if (enemy.isFacingRight) {
 
-            //var tile = layer02.getTile(enemy.body.x, enemy.body.y);
-            //if(layer02.get)
-
             enemy.scale.x = -enemyDrawScale;
-            enemy.body.velocity.x = 200;
+            enemy.anchor.setTo(.5, .5);
+            enemy.body.velocity.x = enemySpeed;
         }
-        if (enemy.isFacingLeft) {
-            enemy.body.velocity.x = -200;
+        if (!enemy.isFacingRight) {
+
+            enemy.body.velocity.x = -enemySpeed;
+            enemy.anchor.setTo(.5, .5);
             enemy.scale.x = enemyDrawScale;
         }
         //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
