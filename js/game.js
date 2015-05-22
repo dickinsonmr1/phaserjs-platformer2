@@ -24,6 +24,13 @@ var cursors;
 
 var enemy;
 var enemies;
+
+var enemyPhysics;
+var enemiesPhysics;
+
+var enemyJumpingFish;
+var enemiesJumpingFish;
+
 var enemySpawnPoints;
 
 var spring;
@@ -179,22 +186,34 @@ function create() {
     //---------------------------------------------------------------------------------------------------
     layer06 = map.createLayer('layer06-enemies');
     layer06.alpha = 0.25;
-    enemies = game.add.group();    
-    map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemies, enemy);
-    //map.createFromTiles(297, null, 'ghost', 'layer06-enemies', enemies, enemy);
+    enemies = game.add.group();
+
+    enemiesPhysics = game.add.group();
+    map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347], null, 'ghost', 'layer06-enemies', enemiesPhysics, enemyPhysics);
+
+    enemiesJumpingFish = game.add.group();
+    map.createFromTiles([371], null, 'ghost', 'layer06-enemies', enemiesJumpingFish, enemyJumpingFish);
+
     layer06.resizeWorld();
 
-    game.physics.enable(enemies);
+    enemiesJumpingFish.forEach(function (enemy) {
+        enemy.enemyType = "jumpingFish";
+        //enemy.enableBody = false;
+        //enemy.body.collideWorldBounds = true;
+        enemy.isFacingRight = true;
+    }, this);
+    enemies.add(enemiesJumpingFish);
 
-    enemies.forEach(function (enemy) {
+    game.physics.enable(enemiesPhysics);
+    enemiesPhysics.forEach(function (enemy) {
+        enemy.enemyType = "physics";
         enemy.enableBody = true;
         enemy.body.collideWorldBounds = true;
         enemy.isFacingRight = true;
     }, this);
-
+    enemies.add(enemiesPhysics);
     //enemies.enableBody = true;
-    //enemies.body.collideWorldBounds = true;
-    
+    //enemies.body.collideWorldBounds = true;    
 
     //---------------------------------------------------------------------------------------------------
     // OBJECTS
@@ -263,26 +282,7 @@ function create() {
     layer04 = map.createLayer('layer04-foreground-passable-opaque');
     layer04.alpha = 1.0;
     layer04.resizeWorld();
-
-
-    //enemySpawnPoints.forEach(function (item) {
-    //    var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
-    //    //enemy.scale.setTo(playerDrawScale, playerDrawScale);
-    //    enemy.anchor.setTo(.5, .5);
-    //}, this);
-
-    //enemies.callAll();
-    //enemies.callAll('animations.add', 'animations', players[selectedPlayerIndex] + 'walk', [1, 2], 10, true);
-    //enemies.callAll('animations.play', 'animations', players[selectedPlayerIndex] + 'walk');
-
-    //gems = game.add.group();
-    //gems.enableBody = true;
-    //map.createFromObjects('layer05-objects', 134, 'gem', 0, true, false, gems);
-    //map.createFromObjects('layer05-objects', 142, 'gem', 0, true, false, gems);
-    //map.createFromObjects('layer05-objects', 149, 'gem', 0, true, false, gems);
-    //map.createFromObjects('layer05-objects', 157, 'gem', 0, true, false, gems);
-
-
+    
     // TODO: add HUD stuff here
 
     // input
@@ -315,10 +315,10 @@ function updatePhysics() {
 
     game.physics.arcade.collide(player, layer02);
     game.physics.arcade.collide(player, layer05);
-    game.physics.arcade.collide(enemies, layer02);
-    game.physics.arcade.collide(enemies, enemies);
+    game.physics.arcade.collide(enemiesPhysics, layer02);
+    game.physics.arcade.collide(enemiesPhysics, enemiesPhysics);
 
-    game.physics.arcade.collide(player, enemies);
+    game.physics.arcade.collide(player, enemiesPhysics);
 
 }
 
@@ -403,40 +403,45 @@ function processInput() {
 }
 
 function updateEnemies(){
-    enemies.forEach(function (enemy) {
+    enemiesPhysics.forEach(function (enemy) {
         
-        
-        //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
-
-        if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
+        switch(enemy.enemyType)
         {
-            enemy.isFacingRight = false;           
+            case 'physics':
+                //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
+
+                if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
+                {
+                    enemy.isFacingRight = false;
+                }
+
+                if (enemy.body.blocked.left && !enemy.isFacingRight)//.body.velocity.x < 0)
+                {
+                    enemy.isFacingRight = true;
+                }
+
+                if (enemy.isFacingRight) {
+
+                    enemy.scale.x = -enemyDrawScale;
+                    enemy.anchor.setTo(.5, .5);
+                    enemy.body.velocity.x = enemySpeed;
+                }
+                if (!enemy.isFacingRight) {
+
+                    enemy.body.velocity.x = -enemySpeed;
+                    enemy.anchor.setTo(.5, .5);
+                    enemy.scale.x = enemyDrawScale;
+                }
+                //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+                //item.animations.play('springAnimation');
+                //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
+                //item.scale.setTo(0.5, 0.5);
+                //item.anchor.setTo(0, 0);
+                //item.body.setSize(64, 64, 0, 32);
+                break;
+            case 'jumpingFish':
+                break;
         }
-
-        if (enemy.body.blocked.left && !enemy.isFacingRight)//.body.velocity.x < 0)
-        {
-            enemy.isFacingRight = true;
-        }
-
-
-        if (enemy.isFacingRight) {
-
-            enemy.scale.x = -enemyDrawScale;
-            enemy.anchor.setTo(.5, .5);
-            enemy.body.velocity.x = enemySpeed;
-        }
-        if (!enemy.isFacingRight) {
-
-            enemy.body.velocity.x = -enemySpeed;
-            enemy.anchor.setTo(.5, .5);
-            enemy.scale.x = enemyDrawScale;
-        }
-        //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
-        //item.animations.play('springAnimation');
-        //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
-        //item.scale.setTo(0.5, 0.5);
-        //item.anchor.setTo(0, 0);
-        //item.body.setSize(64, 64, 0, 32);
     }, this);
 }
 
