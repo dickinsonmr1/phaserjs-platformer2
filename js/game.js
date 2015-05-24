@@ -28,8 +28,8 @@ var enemies;
 var enemyPhysics;
 var enemiesPhysics;
 
-var enemyJumpingFish;
-var enemiesJumpingFish;
+var enemyNonGravity;
+var enemiesNonGravity;
 
 var enemySpawnPoints;
 
@@ -88,6 +88,7 @@ function loadSprites() {
 
     // initial placeholders for animated objects
     game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
+    game.load.image('piranha', 'assets/sprites/enemies/piranha.png');
     game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
 
 }
@@ -188,21 +189,26 @@ function create() {
     layer06.alpha = 0.25;
     enemies = game.add.group();
 
-    enemiesPhysics = game.add.group();
-    map.createFromTiles([297, 290, 322, 300, 324, 380, 337, 395, 299, 323, 330, 353, 347], null, 'ghost', 'layer06-enemies', enemiesPhysics, enemyPhysics);
+    enemiesPhysics = game.add.group();  // removed 324
+    map.createFromTiles([297, 290, 322, 300,     380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemiesPhysics, enemyPhysics);
 
-    enemiesJumpingFish = game.add.group();
-    map.createFromTiles([371], null, 'ghost', 'layer06-enemies', enemiesJumpingFish, enemyJumpingFish);
+    enemiesNonGravity = game.add.group();
+    map.createFromTiles([324], null, 'piranha', 'layer06-enemies', enemiesNonGravity, enemyNonGravity);
 
     layer06.resizeWorld();
 
-    enemiesJumpingFish.forEach(function (enemy) {
-        enemy.enemyType = "jumpingFish";
-        //enemy.enableBody = false;
-        //enemy.body.collideWorldBounds = true;
+    game.physics.enable(enemiesNonGravity);
+    enemiesNonGravity.forEach(function (enemy) {
+        enemy.enemyType = "nonGravity";        
+        enemy.movementTime = 0;
+
+        enemy.enableBody = true;
+        enemy.body.allowGravity = false;
+        enemy.body.velocity.y = 150;
+        enemy.body.collideWorldBounds = false;
         enemy.isFacingRight = true;
     }, this);
-    enemies.add(enemiesJumpingFish);
+    enemies.add(enemiesNonGravity);
 
     game.physics.enable(enemiesPhysics);
     enemiesPhysics.forEach(function (enemy) {
@@ -315,10 +321,12 @@ function updatePhysics() {
 
     game.physics.arcade.collide(player, layer02);
     game.physics.arcade.collide(player, layer05);
+
     game.physics.arcade.collide(enemiesPhysics, layer02);
     game.physics.arcade.collide(enemiesPhysics, enemiesPhysics);
 
     game.physics.arcade.collide(player, enemiesPhysics);
+    game.physics.arcade.collide(player, enemiesNonGravity);
 
 }
 
@@ -403,45 +411,51 @@ function processInput() {
 }
 
 function updateEnemies(){
+
     enemiesPhysics.forEach(function (enemy) {
-        
-        switch(enemy.enemyType)
+        //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
+
+        if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
         {
-            case 'physics':
-                //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
-
-                if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
-                {
-                    enemy.isFacingRight = false;
-                }
-
-                if (enemy.body.blocked.left && !enemy.isFacingRight)//.body.velocity.x < 0)
-                {
-                    enemy.isFacingRight = true;
-                }
-
-                if (enemy.isFacingRight) {
-
-                    enemy.scale.x = -enemyDrawScale;
-                    enemy.anchor.setTo(.5, .5);
-                    enemy.body.velocity.x = enemySpeed;
-                }
-                if (!enemy.isFacingRight) {
-
-                    enemy.body.velocity.x = -enemySpeed;
-                    enemy.anchor.setTo(.5, .5);
-                    enemy.scale.x = enemyDrawScale;
-                }
-                //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
-                //item.animations.play('springAnimation');
-                //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
-                //item.scale.setTo(0.5, 0.5);
-                //item.anchor.setTo(0, 0);
-                //item.body.setSize(64, 64, 0, 32);
-                break;
-            case 'jumpingFish':
-                break;
+            enemy.isFacingRight = false;
         }
+
+        if (enemy.body.blocked.left && !enemy.isFacingRight)//.body.velocity.x < 0)
+        {
+            enemy.isFacingRight = true;
+        }
+
+        if (enemy.isFacingRight) {
+
+            enemy.scale.x = -enemyDrawScale;
+            enemy.anchor.setTo(.5, .5);
+            enemy.body.velocity.x = enemySpeed;
+        }
+        if (!enemy.isFacingRight) {
+
+            enemy.body.velocity.x = -enemySpeed;
+            enemy.anchor.setTo(.5, .5);
+            enemy.scale.x = enemyDrawScale;
+        }        
+    }, this);
+
+    enemiesNonGravity.forEach(function (enemy) {
+        enemy.movementTime++;
+        if (enemy.movementTime > 60) {
+            enemy.movementTime = 0;
+            enemy.body.velocity.y *= -1;
+            if(enemy.body.velocity.y > 0)
+            {
+                enemy.anchor.setTo(.5, .5);
+                enemy.scale.y = -enemyDrawScale;
+            }
+            else
+            {
+                enemy.anchor.setTo(.5, .5);
+                enemy.scale.y = enemyDrawScale;
+            }
+        }
+        //enemy.y += enemy.body.velocity;
     }, this);
 }
 
