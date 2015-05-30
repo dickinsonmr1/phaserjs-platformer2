@@ -154,7 +154,12 @@ function create() {
     //layer2.debug = true;
     
     // add player between background and foreground layers
-    playerSpaceShip = game.add.sprite(300, 300, 'alienShipSprites', 'shipBeige.png');
+    playerSpaceShip = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
+    game.physics.enable(playerSpaceShip);
+    playerSpaceShip.body.collideWorldBounds = true;
+    playerSpaceShip.enableBody = true;
+    playerSpaceShip.body.allowGravity = false;
+
     //var dome = game.add.sprite(325, 285, 'alienShipSprites', 'dome.png');
     game.add.sprite(325, 450, 'alienShipLaserSprites', 'laserBlue3.png');
     game.add.sprite(325, 470, 'alienShipLaserSprites', 'laserBlue3.png');
@@ -179,6 +184,8 @@ function create() {
     player.body.collideWorldBounds = true;
 
     player.frameName = players[selectedPlayerIndex] + "_stand.png";
+
+    player.isInSpaceShip = false;
 
     game.camera.follow(player);
 
@@ -319,60 +326,116 @@ function update() {
 
 function updatePhysics() {
 
-    game.physics.arcade.collide(player, layer02);
-    game.physics.arcade.collide(player, layer05);
+    if (!player.isInSpaceShip) {
+        game.physics.arcade.collide(player, layer02);
+        game.physics.arcade.collide(player, layer05);
+
+        game.physics.arcade.collide(playerSpaceShip, player, collisionHandler, null, this);
+
+        game.physics.arcade.collide(player, enemiesPhysics);
+        game.physics.arcade.collide(player, enemiesNonGravity);
+    }
+    else {
+        game.physics.arcade.collide(playerSpaceShip, layer02);
+        game.physics.arcade.collide(playerSpaceShip, layer05);
+
+        game.physics.arcade.collide(playerSpaceShip, enemiesPhysics);
+        game.physics.arcade.collide(playerSpaceShip, enemiesNonGravity);
+    }        
 
     game.physics.arcade.collide(enemiesPhysics, layer02);
     game.physics.arcade.collide(enemiesPhysics, enemiesPhysics);
+}
 
-    game.physics.arcade.collide(player, enemiesPhysics);
-    game.physics.arcade.collide(player, enemiesNonGravity);
-
+function collisionHandler(playerSpaceShip, player)
+{
+    if (player.renderable) {
+        player.isInSpaceShip = true;
+    }
 }
 
 function updatePlayer() {
-    player.body.velocity.x = 0;
 
-    if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W) || game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+    if (!player.isInSpaceShip)
+    {
+        player.body.velocity.x = 0;
+
+        if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W) || game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+            if (player.body.onFloor()) {
+                player.body.velocity.y = -500;
+                jumpsound.play();
+            }
+        }
+
+        if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+            //player.body.velocity.x = -150;
+            player.body.velocity.x = -200;
+            player.anchor.setTo(.5, .5);
+            player.scale.x = -playerDrawScale;
+            player.scale.y = playerDrawScale
+            player.animations.play(players[selectedPlayerIndex] + 'walk');
+        }
+        else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+            //player.body.velocity.x = 150;
+            player.body.velocity.x = 200;
+            player.anchor.setTo(.5, .5);
+            player.scale.x = playerDrawScale;
+            player.scale.y = playerDrawScale;
+            player.animations.play(players[selectedPlayerIndex] + 'walk');
+        }
+        else if (cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+            if (player.body.onFloor()) {
+                player.frameName = players[selectedPlayerIndex] + "_duck.png";
+            }
+        }
+        else {
+            //  Stand still
+            player.animations.stop();
+            player.frameName = players[selectedPlayerIndex] + "_stand.png";
+            //player.frame = 4;
+        }
+
         if (player.body.onFloor()) {
-            player.body.velocity.y = -500;
-            jumpsound.play();
+            //player.frameName = "alienBeige_duck.png";
+        }
+        else {
+            player.frameName = players[selectedPlayerIndex] + "_jump.png";
         }
     }
+    else
+    {
+        playerSpaceShip.body.velocity.x = 0;
+        playerSpaceShip.body.velocity.y = 0;
 
-    if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-        //player.body.velocity.x = -150;
-        player.body.velocity.x = -200;
-        player.anchor.setTo(.5, .5);
-        player.scale.x = -playerDrawScale;
-        player.scale.y = playerDrawScale
-        player.animations.play(players[selectedPlayerIndex] + 'walk');
-    }
-    else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-        //player.body.velocity.x = 150;
-        player.body.velocity.x = 200;
-        player.anchor.setTo(.5, .5);
-        player.scale.x = playerDrawScale;
-        player.scale.y = playerDrawScale;
-        player.animations.play(players[selectedPlayerIndex] + 'walk');
-    }
-    else if (cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-        if (player.body.onFloor()) {
-            player.frameName = players[selectedPlayerIndex] + "_duck.png";
+        player.body.x = playerSpaceShip.body.x;
+        player.body.y = playerSpaceShip.body.y;
+        player.renderable = false;
+
+        playerSpaceShip.frameName = "shipBeige_manned.png"; //players[selectedPlayerIndex] + "_stand.png";
+        if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W) || game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+            playerSpaceShip.body.velocity.y = -300;
+            playerSpaceShip.anchor.setTo(.5, .5);
         }
-    }
-    else {
-        //  Stand still
-        player.animations.stop();
-        player.frameName = players[selectedPlayerIndex] + "_stand.png";
-        //player.frame = 4;
-    }
+        else if (cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+            playerSpaceShip.body.velocity.y = 300;
+            playerSpaceShip.anchor.setTo(.5, .5);
+        }
 
-    if (player.body.onFloor()) {
-        //player.frameName = "alienBeige_duck.png";
-    }
-    else {
-        player.frameName = players[selectedPlayerIndex] + "_jump.png";
+        if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+            playerSpaceShip.body.velocity.x = -300;
+            playerSpaceShip.anchor.setTo(.5, .5);
+        }
+        else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+            playerSpaceShip.body.velocity.x = 300;
+            playerSpaceShip.anchor.setTo(.5, .5);
+        }
+        
+        else {
+            //playerSpaceShip.body.velocity *= 0.5;
+            //  Stand still
+            //player.frameName = players[selectedPlayerIndex] + "_stand.png";
+            //player.frame = 4;
+        }
     }
 }
 
