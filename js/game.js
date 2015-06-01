@@ -52,6 +52,8 @@ var enemyDrawScale = 1;
 
 var enemySpeed = 200;
 
+var emitter;
+var emitTime;
 
 function preload() {
 
@@ -90,6 +92,7 @@ function loadSprites() {
     game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
     game.load.image('piranha', 'assets/sprites/enemies/piranha.png');
     game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
+    game.load.image('engineExhaust', 'assets/sprites/ships/laserblue3.png');
 
 }
 
@@ -160,10 +163,32 @@ function create() {
     playerSpaceShip.enableBody = true;
     playerSpaceShip.body.allowGravity = false;
 
+
+
+    emitter = game.add.emitter(0, 0, 200);
+
+    emitter.makeParticles('engineExhaust');
+    emitter.minRotation = 0;
+    emitter.maxRotation = 0;
+    //emitter.gravity = 150;
+    emitter.setAlpha(1, 0, 2000);
+    emitter.setXSpeed(0, 0);
+    emitter.setYSpeed(100, 150);
+    //emitter.bounce.setTo(0.5, 0.5);
+    emitter.setScale(0.1, 1, 0.25, 0.25, 1000, Phaser.Easing.Quintic.Out);
+
+    emitter.x = playerSpaceShip.x;
+    emitter.y = playerSpaceShip.y + 50;
+    emitter.start(false, 1000, 100, 0);
+
+    //particleBurst();
+    //playerSpaceShip.addChild(emitter);
+    //emmitter
+
     //var dome = game.add.sprite(325, 285, 'alienShipSprites', 'dome.png');
-    game.add.sprite(325, 450, 'alienShipLaserSprites', 'laserBlue3.png');
-    game.add.sprite(325, 470, 'alienShipLaserSprites', 'laserBlue3.png');
-    game.add.sprite(325, 490, 'alienShipLaserSprites', 'laserBlue3.png');
+    //game.add.sprite(325, 450, 'alienShipLaserSprites', 'laserBlue3.png');
+    //game.add.sprite(325, 470, 'alienShipLaserSprites', 'laserBlue3.png');
+    //game.add.sprite(325, 490, 'alienShipLaserSprites', 'laserBlue3.png');
 
 
     player = game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
@@ -317,6 +342,8 @@ function update() {
     sky.tilePosition.x = -(game.camera.x * 0.25);
     sky.tilePosition.y = -(game.camera.y * 0.05) + 250;
 
+    emitTime++;
+
     updatePhysics();
     updatePlayer();
     processInput();
@@ -351,6 +378,7 @@ function collisionHandler(playerSpaceShip, player)
 {
     if (player.renderable) {
         player.isInSpaceShip = true;
+        //particleBurst();
     }
 }
 
@@ -404,6 +432,10 @@ function updatePlayer() {
     }
     else
     {
+        //if (emitTime > 40) {
+            //emitTime = 0;
+            particleBurst();
+        //}
         playerSpaceShip.body.velocity.x = 0;
         playerSpaceShip.body.velocity.y = 0;
 
@@ -415,19 +447,23 @@ function updatePlayer() {
         if (cursors.up.isDown || game.input.keyboard.isDown(Phaser.Keyboard.W) || game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
             playerSpaceShip.body.velocity.y = -300;
             playerSpaceShip.anchor.setTo(.5, .5);
+            //particleBurst();
         }
         else if (cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
             playerSpaceShip.body.velocity.y = 300;
             playerSpaceShip.anchor.setTo(.5, .5);
+            //particleBurst();
         }
 
         if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
             playerSpaceShip.body.velocity.x = -300;
             playerSpaceShip.anchor.setTo(.5, .5);
+            //particleBurst();
         }
         else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
             playerSpaceShip.body.velocity.x = 300;
             playerSpaceShip.anchor.setTo(.5, .5);
+            //particleBurst();
         }
         
         else {
@@ -436,6 +472,18 @@ function updatePlayer() {
             //player.frameName = players[selectedPlayerIndex] + "_stand.png";
             //player.frame = 4;
         }
+
+        //if (game.input.keyboard.isDown(Phaser.Keyboard.CONTROL)) {
+
+        //    var laser = game.add.sprite(playerSpaceShip.body.x, playerSpaceShip.body.y + 100, 'alienShipLaserSprites', 'laserblue3.png');
+        //    //laser.scale.setTo(playerDrawScale, playerDrawScale);
+        //    laser.anchor.setTo(.5, .5);
+        //    laser.frameName = "laserblue3.png";
+
+        //    playerSpaceShip.emitExhaust = true;
+        //    //game.add.sprite(325, 490, 'alienShipLaserSprites', 'laserBlue3.png');
+        //}
+
     }
 }
 
@@ -569,11 +617,12 @@ function collectKey(sprite, tile) {
 
 function touchSpring(sprite, tile) {
 
-    //if(springSound.)
-    //if (tile.alpha > 0) {
-    player.body.velocity.y = -650;
-    springSound.play();
-
+    if (!player.isInSpaceShip) {
+        //if(springSound.)
+        //if (tile.alpha > 0) {
+        player.body.velocity.y = -650;
+        springSound.play();
+    }
     //spring.animations.play('springAnimation');
 
         //map.removeTile(tile.x, tile.y);
@@ -591,6 +640,15 @@ function touchSpring(sprite, tile) {
 }
 
 
+
+function particleBurst() {
+
+    emitter.x = playerSpaceShip.x;
+    emitter.y = playerSpaceShip.y + 50;
+    //emitter.start(false, 2000, 750, 1, 20);
+    //emitter.on = true;
+
+}
 
 //function collectGem2(player, gem) {
 
