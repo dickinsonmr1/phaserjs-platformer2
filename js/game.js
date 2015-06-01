@@ -1,6 +1,6 @@
 /// <reference path="phaser.js" />
 
-var game = new Phaser.Game(1280, 720, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+var game = new Phaser.Game(1280, 720, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 
 var map;
 var tileset;
@@ -55,12 +55,12 @@ var enemySpeed = 200;
 var emitter;
 var emitTime;
 
+var isWorldLoaded = false;
+
 function preload() {
 
     loadAudio();
-
     loadSprites();
-
     loadTilemap();
 }
 
@@ -107,8 +107,6 @@ function loadTilemap() {
     game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
 }
 
-
-
 function create() {
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -118,7 +116,12 @@ function create() {
     sky = game.add.tileSprite(0, 0, 20480, 1024, 'sky');
     sky.fixedtoCamera = true;
 
-    map = game.add.tilemap('level1');
+    createWorld('level1');
+}
+
+function createWorld(worldName) {
+
+    map = game.add.tilemap(worldName);
     //map.addTilesetImage('sky', 'backgroundImageLayer');
     map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
     map.addTilesetImage('spritesheet_items_64x64', 'items');
@@ -155,64 +158,13 @@ function create() {
     //  Un-comment this on to see the collision tiles
     //layer.debug = true;
     //layer2.debug = true;
-    
+
     // add player between background and foreground layers
-    playerSpaceShip = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
-    game.physics.enable(playerSpaceShip);
-    playerSpaceShip.body.collideWorldBounds = true;
-    playerSpaceShip.enableBody = true;
-    playerSpaceShip.body.allowGravity = false;
 
+    createSpaceShip();
 
+    createPlayer();
 
-    emitter = game.add.emitter(0, 0, 200);
-
-    emitter.makeParticles('engineExhaust');
-    emitter.minRotation = 0;
-    emitter.maxRotation = 0;
-    //emitter.gravity = 150;
-    emitter.setAlpha(1, 0, 2000);
-    emitter.setXSpeed(0, 0);
-    emitter.setYSpeed(100, 150);
-    //emitter.bounce.setTo(0.5, 0.5);
-    emitter.setScale(0.1, 1, 0.25, 0.25, 1000, Phaser.Easing.Quintic.Out);
-
-    emitter.x = playerSpaceShip.x;
-    emitter.y = playerSpaceShip.y + 50;
-    emitter.start(false, 1000, 100, 0);
-
-    //particleBurst();
-    //playerSpaceShip.addChild(emitter);
-    //emmitter
-
-    //var dome = game.add.sprite(325, 285, 'alienShipSprites', 'dome.png');
-    //game.add.sprite(325, 450, 'alienShipLaserSprites', 'laserBlue3.png');
-    //game.add.sprite(325, 470, 'alienShipLaserSprites', 'laserBlue3.png');
-    //game.add.sprite(325, 490, 'alienShipLaserSprites', 'laserBlue3.png');
-
-
-    player = game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
-    player.scale.setTo(playerDrawScale, playerDrawScale);
-    player.anchor.setTo(.5, .5);
-    
-    for (i = 0; i < players.length; i++) {
-        player.animations.add(players[i] + 'walk', Phaser.Animation.generateFrameNames(players[i] + '_walk', 1, 2, '.png'), 10);
-        player.animations.add(players[i] + 'swim', Phaser.Animation.generateFrameNames(players[i] + + '_swim', 1, 2, '.png'), 10);
-        player.animations.add(players[i] + 'climb', Phaser.Animation.generateFrameNames(players[i] + '_climb', 1, 2, '.png'), 10);
-    }
-
-    game.physics.enable(player);
-    game.physics.arcade.gravity.y = 600;
-    player.body.setSize(64, 64, 0, 47);
-    player.body.bounce.y = 0.05;
-    player.body.linearDamping = 1;
-    player.body.collideWorldBounds = true;
-
-    player.frameName = players[selectedPlayerIndex] + "_stand.png";
-
-    player.isInSpaceShip = false;
-
-    game.camera.follow(player);
 
     //---------------------------------------------------------------------------------------------------
     // ENEMIES
@@ -222,7 +174,7 @@ function create() {
     enemies = game.add.group();
 
     enemiesPhysics = game.add.group();  // removed 324
-    map.createFromTiles([297, 290, 322, 300,     380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemiesPhysics, enemyPhysics);
+    map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemiesPhysics, enemyPhysics);
 
     enemiesNonGravity = game.add.group();
     map.createFromTiles([324], null, 'piranha', 'layer06-enemies', enemiesNonGravity, enemyNonGravity);
@@ -231,7 +183,7 @@ function create() {
 
     game.physics.enable(enemiesNonGravity);
     enemiesNonGravity.forEach(function (enemy) {
-        enemy.enemyType = "nonGravity";        
+        enemy.enemyType = "nonGravity";
         enemy.movementTime = 0;
 
         enemy.enableBody = true;
@@ -281,25 +233,21 @@ function create() {
     //springs.enableBody = true;
     //spring2 = game.add.sprite(64, 64, 'tileObjectSprites', 'spring0.png');
     //spring2.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
-    
-    ////spring.animation.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
-    
-    
 
-    
+    ////spring.animation.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
 
     map.setCollision(tileKeySpring, true, layer05, true);
     map.setTileIndexCallback(tileKeySpring, touchSpring, this, layer05);
-    
+
     map.createFromTiles(tileKeySpring, null, 'tileObjectSprites', 'layer05-objects', springs, spring);
     springs.forEach(function (item) {
-    //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
-    //item.animations.play('springAnimation');
-    //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
+        //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+        //item.animations.play('springAnimation');
+        //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
         item.scale.setTo(0.5, 0.5);
         item.anchor.setTo(0, 0);
         //item.body.setSize(64, 64, 0, 32);
-        }, this);
+    }, this);
 
     springs.callAll('animations.add', 'animations', 'springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 2, true, false);
     springs.callAll('play', null, 'springAnimation');
@@ -309,46 +257,47 @@ function create() {
 
     //---------------------------------------------------------------------------------------------------
     // foreground semi-transparent layer (water, lava, clouds, etc.)
-        //---------------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------
     layer03 = map.createLayer('layer03-foreground-passable-semitransparent');
     layer03.alpha = 0.5;
     layer03.resizeWorld();
 
-        //---------------------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------------------
     // FOREGROUND PASSABLE OPAQUE LAYER
     //---------------------------------------------------------------------------------------------------
     layer04 = map.createLayer('layer04-foreground-passable-opaque');
     layer04.alpha = 1.0;
     layer04.resizeWorld();
-    
+
     // TODO: add HUD stuff here
 
     // input
     cursors = game.input.keyboard.createCursorKeys();
-    
+
     // audio
     jumpsound = this.game.add.audio('jump');
     gemSound = this.game.add.audio('gemSound');
     keySound = this.game.add.audio('key');
     springSound = this.game.add.audio('springSound');
     springSound.allowMultiple = false;
-}
 
-function createMap() {
-
+    isWorldLoaded = true;
 }
 
 function update() {
-    sky.tilePosition.x = -(game.camera.x * 0.25);
-    sky.tilePosition.y = -(game.camera.y * 0.05) + 250;
+    if (isWorldLoaded)
+    {
+        sky.tilePosition.x = -(game.camera.x * 0.25);
+        sky.tilePosition.y = -(game.camera.y * 0.05) + 250;
 
-    emitTime++;
+        emitTime++;
 
-    updatePhysics();
-    updatePlayer();
-    processInput();
+        updatePhysics();
+        updatePlayer();
+        processInput();
 
-    updateEnemies();
+        updateEnemies();
+    }
 }
 
 function updatePhysics() {
@@ -357,7 +306,7 @@ function updatePhysics() {
         game.physics.arcade.collide(player, layer02);
         game.physics.arcade.collide(player, layer05);
 
-        game.physics.arcade.collide(playerSpaceShip, player, collisionHandler, null, this);
+        game.physics.arcade.collide(playerSpaceShip, player, playerEnteringSpaceshipCollisionHandler, null, this);
 
         game.physics.arcade.collide(player, enemiesPhysics);
         game.physics.arcade.collide(player, enemiesNonGravity);
@@ -374,12 +323,26 @@ function updatePhysics() {
     game.physics.arcade.collide(enemiesPhysics, enemiesPhysics);
 }
 
-function collisionHandler(playerSpaceShip, player)
+function playerEnteringSpaceshipCollisionHandler(playerSpaceShip, player)
 {
     if (player.renderable) {
+        
         player.isInSpaceShip = true;
         //particleBurst();
+        emitter.start(false, 1000, 100, 0);
     }
+}
+
+function playerExitingSpaceship() {
+    player.isInSpaceShip = false;
+    player.body.velocity.y = -400;
+    player.body.x = playerSpaceShip.body.x +50;
+    player.renderable = true;
+    playerSpaceShip.body.velocity.x = 0;
+    playerSpaceShip.body.velocity.y = 0;
+    playerSpaceShip.frameName = "shipBeige.png"; //players[selectedPlayerIndex] + "_stand.png";
+
+    emitter.on = false;
 }
 
 function updatePlayer() {
@@ -464,14 +427,21 @@ function updatePlayer() {
             playerSpaceShip.body.velocity.x = 300;
             playerSpaceShip.anchor.setTo(.5, .5);
             //particleBurst();
-        }
-        
+        }        
         else {
             //playerSpaceShip.body.velocity *= 0.5;
             //  Stand still
             //player.frameName = players[selectedPlayerIndex] + "_stand.png";
             //player.frame = 4;
         }
+
+        if (game.input.keyboard.isDown(Phaser.Keyboard.E)) {
+
+            playerExitingSpaceship();
+
+            //particleBurst();
+        }
+
 
         //if (game.input.keyboard.isDown(Phaser.Keyboard.CONTROL)) {
 
@@ -639,14 +609,69 @@ function touchSpring(sprite, tile) {
     //return false;
 }
 
+function createPlayer() {
 
+    player = game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
+    player.scale.setTo(playerDrawScale, playerDrawScale);
+    player.anchor.setTo(.5, .5);
+
+    for (i = 0; i < players.length; i++) {
+        player.animations.add(players[i] + 'walk', Phaser.Animation.generateFrameNames(players[i] + '_walk', 1, 2, '.png'), 10);
+        player.animations.add(players[i] + 'swim', Phaser.Animation.generateFrameNames(players[i] + + '_swim', 1, 2, '.png'), 10);
+        player.animations.add(players[i] + 'climb', Phaser.Animation.generateFrameNames(players[i] + '_climb', 1, 2, '.png'), 10);
+    }
+
+    game.physics.enable(player);
+    game.physics.arcade.gravity.y = 600;
+    player.body.setSize(64, 64, 0, 47);
+    player.body.bounce.y = 0.05;
+    player.body.linearDamping = 1;
+    player.body.collideWorldBounds = true;
+
+    player.frameName = players[selectedPlayerIndex] + "_stand.png";
+
+    player.isInSpaceShip = false;
+
+    game.camera.follow(player);
+}
+
+function createSpaceShip()
+{
+    playerSpaceShip = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
+    game.physics.enable(playerSpaceShip);
+    playerSpaceShip.body.collideWorldBounds = true;
+    playerSpaceShip.enableBody = true;
+    playerSpaceShip.body.allowGravity = false;
+
+    createSpaceShipExhaustEmitter();
+}
+
+function createSpaceShipExhaustEmitter()
+{
+    emitter = game.add.emitter(playerSpaceShip.body.x, playerSpaceShip.body.y, 200);
+
+    emitter.makeParticles('engineExhaust');
+    emitter.minRotation = 0;
+    emitter.maxRotation = 0;
+    //emitter.gravity = 150;
+    emitter.setAlpha(1, 0, 1250);
+    emitter.setXSpeed(0, 0);
+    emitter.setYSpeed(100, 150);
+    //emitter.bounce.setTo(0.5, 0.5);
+    emitter.setScale(0.1, 1, 0.25, 0.25, 1000, Phaser.Easing.Quintic.Out);
+
+    emitter.x = playerSpaceShip.x;
+    emitter.y = playerSpaceShip.y + 50;
+}
 
 function particleBurst() {
 
     emitter.x = playerSpaceShip.x;
     emitter.y = playerSpaceShip.y + 50;
+    emitter.setXSpeed(playerSpaceShip.body.velocity.x, playerSpaceShip.body.velocity.x);
+    emitter.setYSpeed(playerSpaceShip.body.velocity.y + 150, playerSpaceShip.body.velocity.y + 150);
     //emitter.start(false, 2000, 750, 1, 20);
-    //emitter.on = true;
+    emitter.on = true;
 
 }
 
