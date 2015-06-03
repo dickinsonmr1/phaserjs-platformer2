@@ -12,6 +12,7 @@ var layer03;
 var layer04;
 var layer05;
 var layer06;
+var layer07;
 
 var players = ['alienBeige', 'alienBlue', 'alienGreen', 'alienPink', 'alienYellow'];
 var selectedPlayerIndex = 0;
@@ -21,6 +22,11 @@ var gems;
 var player;
 var playerSpaceShip;
 var cursors;
+var playerGun;
+var playerGunBullet;
+
+var bullets;
+var bulletTime = 0;
 
 var enemy;
 var enemies;
@@ -42,6 +48,7 @@ var tileKeyGemGreen = 142;
 var tileKeyGemRed = 157;
 var tileKeyGemYellow = 134;
 var tileKeyGemBlue = 149;
+
 var tileKeySpring = 266;
 
 
@@ -93,6 +100,10 @@ function loadSprites() {
     game.load.image('piranha', 'assets/sprites/enemies/piranha.png');
     game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
     game.load.image('engineExhaust', 'assets/sprites/ships/laserblue3.png');
+
+    game.load.image('playerGun', 'assets/sprites/player/raygunPurpleBig.png');
+    game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot.png');
+
 
 }
 
@@ -169,17 +180,17 @@ function createWorld(worldName) {
     //---------------------------------------------------------------------------------------------------
     // ENEMIES
     //---------------------------------------------------------------------------------------------------
-    layer06 = map.createLayer('layer06-enemies');
-    layer06.alpha = 0.25;
+    layer07 = map.createLayer('layer07-enemies');
+    layer07.alpha = 0.1;
     enemies = game.add.group();
 
     enemiesPhysics = game.add.group();  // removed 324
-    map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer06-enemies', enemiesPhysics, enemyPhysics);
+    map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics, enemyPhysics);
 
     enemiesNonGravity = game.add.group();
-    map.createFromTiles([324], null, 'piranha', 'layer06-enemies', enemiesNonGravity, enemyNonGravity);
+    map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity, enemyNonGravity);
 
-    layer06.resizeWorld();
+    layer07.resizeWorld();
 
     game.physics.enable(enemiesNonGravity);
     enemiesNonGravity.forEach(function (enemy) {
@@ -206,10 +217,10 @@ function createWorld(worldName) {
     //enemies.body.collideWorldBounds = true;    
 
     //---------------------------------------------------------------------------------------------------
-    // OBJECTS
+    // COLLECTIBLES
     //---------------------------------------------------------------------------------------------------
-    layer05 = map.createLayer('layer05-objects');
-    layer05.alpha = 0.75;
+    layer05 = map.createLayer('layer05-collectibles');
+    layer05.alpha = 1.0;//0.75;
     //map.setCollisionBetween(0, 400, true, layer05, true);
 
     // gem stuff... http://phaser.io/examples/v2/tilemaps/tile-callbacks
@@ -228,31 +239,39 @@ function createWorld(worldName) {
     map.setTileIndexCallback(tileKeyBlueKey, collectKey, this, layer05);
 
     // green flag no wind: 146
+    layer05.resizeWorld();
+
+
+    //---------------------------------------------------------------------------------------------------
+    // GAMEOBJECTS
+    //---------------------------------------------------------------------------------------------------
+    layer06 = map.createLayer('layer06-gameobjects');
+    layer06.alpha = 0.0;//0.75;
+    //map.setCollisionBetween(0, 400, true, layer05, true);
+
+    // green flag no wind: 146
 
     springs = game.add.group();
-    //springs.enableBody = true;
-    //spring2 = game.add.sprite(64, 64, 'tileObjectSprites', 'spring0.png');
-    //spring2.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+    
 
-    ////spring.animation.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
+    map.setCollision(tileKeySpring, true, layer06, true);
 
-    map.setCollision(tileKeySpring, true, layer05, true);
-    map.setTileIndexCallback(tileKeySpring, touchSpring, this, layer05);
+    map.createFromTiles(tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', springs, spring);
+    layer06.resizeWorld();
 
-    map.createFromTiles(tileKeySpring, null, 'tileObjectSprites', 'layer05-objects', springs, spring);
-    springs.forEach(function (item) {
-        //item.animations.add('springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 10);
-        //item.animations.play('springAnimation');
-        //var enemy = game.add.sprite(100, 100, 'enemySprites', 'ghost.png');
+    game.physics.enable(springs);
+    springs.forEach(function (item) {        
+        item.enableBody = true;
+        item.immovable = true;
+        item.body.moves = false;
         item.scale.setTo(0.5, 0.5);
         item.anchor.setTo(0, 0);
-        //item.body.setSize(64, 64, 0, 32);
     }, this);
 
     springs.callAll('animations.add', 'animations', 'springAnimation', Phaser.Animation.generateFrameNames('spring', 0, 1, '.png'), 2, true, false);
     springs.callAll('play', null, 'springAnimation');
 
-    layer05.resizeWorld();
+    
 
 
     //---------------------------------------------------------------------------------------------------
@@ -281,6 +300,29 @@ function createWorld(worldName) {
     springSound = this.game.add.audio('springSound');
     springSound.allowMultiple = false;
 
+
+
+
+
+
+    bullets = game.add.group();
+    game.physics.enable(bullets);
+    bullets.enableBody = true;
+    bullets.allowGravity = false;
+
+    for (var i = 0; i < 200; i++) {
+        var b = bullets.create(0, 0, 'playerGunBullet');
+        b.name = 'bullet' + i;
+        b.exists = false;
+        b.visible = false;
+        b.checkWorldBounds = true;
+        b.body.gravity.y = 0;
+        b.body.collideWorldBounds = true;
+        b.events.onOutOfBounds.add(resetBullet, this);
+    }
+
+
+
     isWorldLoaded = true;
 }
 
@@ -294,6 +336,7 @@ function update() {
 
         updatePhysics();
         updatePlayer();
+        updateBullets();
         processInput();
 
         updateEnemies();
@@ -305,6 +348,7 @@ function updatePhysics() {
     if (!player.isInSpaceShip) {
         game.physics.arcade.collide(player, layer02);
         game.physics.arcade.collide(player, layer05);
+        game.physics.arcade.collide(player, springs, playerTouchingSpringHandler, null, this);
 
         game.physics.arcade.collide(playerSpaceShip, player, playerEnteringSpaceshipCollisionHandler, null, this);
 
@@ -330,6 +374,16 @@ function playerEnteringSpaceshipCollisionHandler(playerSpaceShip, player)
         player.isInSpaceShip = true;
         //particleBurst();
         emitter.start(false, 1000, 100, 0);
+    }
+}
+
+function playerTouchingSpringHandler(player, springs) {
+
+    if (!player.isInSpaceShip) {
+        //if(springSound.)
+        //if (tile.alpha > 0) {
+        player.body.velocity.y = -650;
+        springSound.play();
     }
 }
 
@@ -359,31 +413,55 @@ function updatePlayer() {
         }
 
         if (cursors.left.isDown || game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+
+            player.isFacingRight = false;
+
             //player.body.velocity.x = -150;
             player.body.velocity.x = -200;
             player.anchor.setTo(.5, .5);
             player.scale.x = -playerDrawScale;
             player.scale.y = playerDrawScale
             player.animations.play(players[selectedPlayerIndex] + 'walk');
+
+            playerGun.scale.x = -0.8;
+            playerGun.scale.y = 0.8;
+            playerGun.anchor.setTo(.5, .5);
+            playerGun.body.x = player.body.x - 45;
+
+            playerGun.body.y = player.body.y - 22;
         }
         else if (cursors.right.isDown || game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+
+            player.isFacingRight = true;
+
             //player.body.velocity.x = 150;
             player.body.velocity.x = 200;
             player.anchor.setTo(.5, .5);
             player.scale.x = playerDrawScale;
             player.scale.y = playerDrawScale;
             player.animations.play(players[selectedPlayerIndex] + 'walk');
+
+            playerGun.scale.x = 0.8;
+            playerGun.scale.y = 0.8;
+            playerGun.anchor.setTo(.5, .5);
+            playerGun.body.x = player.body.x + 20;
+
+            playerGun.body.y = player.body.y - 22;
         }
         else if (cursors.down.isDown || game.input.keyboard.isDown(Phaser.Keyboard.S)) {
             if (player.body.onFloor()) {
                 player.frameName = players[selectedPlayerIndex] + "_duck.png";
+
+                playerGun.body.y = player.body.y - 10;
             }
         }
         else {
             //  Stand still
             player.animations.stop();
             player.frameName = players[selectedPlayerIndex] + "_stand.png";
-            //player.frame = 4;
+            //player.frame = 4;\
+
+            playerGun.body.y = player.body.y - 22;
         }
 
         if (player.body.onFloor()) {
@@ -391,6 +469,34 @@ function updatePlayer() {
         }
         else {
             player.frameName = players[selectedPlayerIndex] + "_jump.png";
+        }
+
+
+        if (game.input.keyboard.isDown(Phaser.Keyboard.CONTROL)) {
+            fireBullet();
+        }
+
+       
+
+        //if (player.isFacingRight) {
+        //    playerGun.body.x = player.body.x + 20;
+        //    playerGun.body.y = player.body.y - 33;
+        //    playerGun.anchor.setTo(1, 0);
+        //}
+        //else {
+        //    playerGun.body.x = player.body.x - 20;
+        //    playerGun.body.y = player.body.y - 33;
+        //    playerGun.anchor.setTo(1, 0);
+        //}
+
+
+
+        if (player.isFacingRight) {
+       
+        }
+        if (!player.isFacingRight) {
+
+            
         }
     }
     else
@@ -455,6 +561,13 @@ function updatePlayer() {
         //}
 
     }
+}
+
+function updateBullets() {
+
+    bullets.forEach(function (bullet) {
+        bullet.body.velocity.y = 0;
+    }, this);
 }
 
 function processInput() {
@@ -585,30 +698,6 @@ function collectKey(sprite, tile) {
     return false;
 }
 
-function touchSpring(sprite, tile) {
-
-    if (!player.isInSpaceShip) {
-        //if(springSound.)
-        //if (tile.alpha > 0) {
-        player.body.velocity.y = -650;
-        springSound.play();
-    }
-    //spring.animations.play('springAnimation');
-
-        //map.removeTile(tile.x, tile.y);
-
-    //    tile.alpha = 0;
-    //    tile.collideUp = false;
-    //    tile.collideDown = false;
-    //    tile.collideLeft = false;
-    //    tile.collideRight = false;
-    //    layer05.dirty = true;
-    //    map.dirty = true;
-    //    map.setLayer(layer05);
-    //}
-    //return false;
-}
-
 function createPlayer() {
 
     player = game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
@@ -631,6 +720,13 @@ function createPlayer() {
     player.frameName = players[selectedPlayerIndex] + "_stand.png";
 
     player.isInSpaceShip = false;
+
+    player.isFacingRight = true;
+
+    playerGun = game.add.sprite(64, 64, 'playerGun', 'playerGun');
+    playerGun.anchor.setTo(0.5, 0.5);
+
+    game.physics.enable(playerGun);
 
     game.camera.follow(player);
 }
@@ -679,4 +775,42 @@ function particleBurst() {
 
 //    gemSound.play();
 //    gem.kill();
+//}
+
+
+function fireBullet() {
+
+    if (game.time.now > bulletTime) {
+        bullet = bullets.getFirstExists(false);
+
+        if (bullet) {
+            if (player.isFacingRight) {
+                bullet.reset(playerGun.body.x + 6, playerGun.body.y - 8);
+                bullet.body.velocity.x = 500;
+                bullet.body.velocity.y = 0;
+            }
+            else {
+                bullet.reset(playerGun.body.x - 20, playerGun.body.y - 8);
+                bullet.body.velocity.x = -500;
+                bullet.body.velocity.y = 0;
+            }
+            bulletTime = game.time.now + 150;
+        }
+    }
+
+}
+
+//  Called if the bullet goes out of the screen
+function resetBullet(bullet) {
+
+    bullet.kill();
+
+}
+
+////  Called if the bullet hits one of the veg sprites
+//function collisionHandler(bullet, veg) {
+
+//    bullet.kill();
+//    veg.kill();
+
 //}
