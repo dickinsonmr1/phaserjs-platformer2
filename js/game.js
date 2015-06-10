@@ -64,6 +64,9 @@ var emitTime;
 
 var isWorldLoaded = false;
 
+var hudGroup;
+var playerHudIcon
+
 function preload() {
 
     loadAudio();
@@ -126,6 +129,15 @@ function create() {
 
     sky = game.add.tileSprite(0, 0, 20480, 1024, 'sky');
     sky.fixedtoCamera = true;
+
+    hudGroup = game.add.group();
+
+    // http://www.html5gamedevs.com/topic/6380-moving-a-camera-fixed-sprite/
+    playerHudIcon = game.add.image(0, 0, 'playerSprites', 'alienBlue_front.png');
+    playerHudIcon.fixedToCamera = true;
+    playerHudIcon.anchor.setTo(0, 0);
+    
+    //hudGroup.add(playerHudIcon);
 
     createWorld('level1');
 }
@@ -213,7 +225,7 @@ function createWorld(worldName) {
         enemy.isFacingRight = true;
     }, this);
     enemies.add(enemiesPhysics);
-    //enemies.enableBody = true;
+    //enemies.enableBody = true;F
     //enemies.body.collideWorldBounds = true;    
 
     //---------------------------------------------------------------------------------------------------
@@ -340,6 +352,8 @@ function update() {
         processInput();
 
         updateEnemies();
+
+        updateHud();
     }
 }
 
@@ -651,6 +665,11 @@ function updateEnemies(){
         }
         //enemy.y += enemy.body.velocity;
     }, this);
+}
+
+function updateHud() {
+    //hudGroup.bringToTop();
+    playerHudIcon.bringToTop();
 }
 
 function render() {
