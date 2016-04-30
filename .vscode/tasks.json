@@ -4,7 +4,7 @@
 	"version": "0.1.0",
 	"command": "tsc",
 	"isShellCommand": true,
-	"args": ["./js/game.ts"],
+	"args": ["--out","app.js"],
 	"showOutput": "silent",
 	"problemMatcher": "$tsc"
 }

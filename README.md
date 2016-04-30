@@ -1,7 +1,3 @@
-# phaserjs-platformer2
-Phaser game using JS
 
-
-assets: http://www.kenney.nl/assets
-
-
+# Recommended dead easy web server:
+https://www.npmjs.com/package/http-server
