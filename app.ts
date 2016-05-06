@@ -80,7 +80,6 @@ class MyGame {
     bullet;
         
     preload = () => {
-
         this.loadAudio();
         this.loadSprites();
         this.loadTilemap();
@@ -97,9 +96,8 @@ class MyGame {
     }
 
     loadSprites = () =>  {
-
         // background image
-        //game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
+        //this.game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
         this.game.load.image('sky', 'assets/sprites/backgrounds/colored_grass.png');
         //game.load.image('sky', 'assets/sprites/backgrounds/blue_land.png');
 
@@ -118,14 +116,12 @@ class MyGame {
 
         this.game.load.image('playerGun', 'assets/sprites/player/raygunPurpleBig.png');
         this.game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot.png');
-
-
     }
 
     loadTilemap = () =>  {
         // tilemap for level building
         this.game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
-        //game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
+        //this.game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
         this.game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
         this.game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
         this.game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
@@ -134,7 +130,6 @@ class MyGame {
     }
 
     create = () =>  {
-
         this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
         this.game.stage.backgroundColor = '#787878';
@@ -155,10 +150,32 @@ class MyGame {
         //hudGroup.add(playerHudIcon);
 
         this.createWorld('level1');
+        this.createAudio();       
     }
 
+    createAudio = () => {
+        this.jumpsound = this.game.add.audio('jump');
+        this.gemSound = this.game.add.audio('gemSound');
+        this.keySound = this.game.add.audio('key');
+        this.springSound = this.game.add.audio('springSound');
+        this.springSound.allowMultiple = false;
+    }
+    
     createWorld = (worldName) => {
 
+        // using the Tiled map editor, here is the order of the layers from back to front:
+        
+        // layer00-image (not currently used)
+        // layer01-background-passable
+        // layer02-nonpassable        
+        // (player spaceship)
+        // (player)
+        // layer07-enemies 
+        // layer05-collectibles
+        // layer03-foreground-passable-semitransparent
+        // layer06-gameobjects        
+        // layer04-foreground-passable-opaque
+        
         this.map = this.game.add.tilemap(worldName);
         //map.addTilesetImage('sky', 'backgroundImageLayer');
         this.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
@@ -202,7 +219,6 @@ class MyGame {
         this.createSpaceShip();
 
         this.createPlayer();
-
 
         //---------------------------------------------------------------------------------------------------
         // ENEMIES
@@ -268,7 +284,6 @@ class MyGame {
         // green flag no wind: 146
         this.layer05.resizeWorld();
 
-
         //---------------------------------------------------------------------------------------------------
         // GAMEOBJECTS
         //---------------------------------------------------------------------------------------------------
@@ -276,10 +291,7 @@ class MyGame {
         this.layer06.alpha = 0.0;//0.75;
         //map.setCollisionBetween(0, 400, true, layer05, true);
 
-        // green flag no wind: 146
-
-        this.springs = this.game.add.group();
-        
+        this.springs = this.game.add.group();        
         this.map.setCollision(this.tileKeySpring, true, this.layer06, true);
 
         this.map.createFromTiles(this.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', this.springs, this.spring);
@@ -305,7 +317,7 @@ class MyGame {
         this.layer03.resizeWorld();
 
         //---------------------------------------------------------------------------------------------------
-        // FOREGROUND PASSABLE OPAQUE LAYER
+        // FOREGROUND PASSABLE OPAQUE LAYER (front wall of a cave, plant, etc.)
         //---------------------------------------------------------------------------------------------------
         this.layer04 = this.map.createLayer('layer04-foreground-passable-opaque');
         this.layer04.alpha = 1.0;
@@ -315,13 +327,6 @@ class MyGame {
 
         // input
         this.cursors = this.game.input.keyboard.createCursorKeys();
-
-        // audio
-        this.jumpsound = this.game.add.audio('jump');
-        this.gemSound = this.game.add.audio('gemSound');
-        this.keySound = this.game.add.audio('key');
-        this.springSound = this.game.add.audio('springSound');
-        this.springSound.allowMultiple = false;
 
         this.bullets = this.game.add.group();
         this.game.physics.enable(this.bullets);
@@ -674,10 +679,8 @@ class MyGame {
     }
 
     render = () =>  {
-
         // game.debug.body(p);
         //game.debug.bodyInfo(player, 32, 320);
-
     }
 
     collectGem = (sprite, tile) => {
@@ -780,14 +783,12 @@ class MyGame {
     }
 
     particleBurst = () => {
-
         this.emitter.x = this.playerSpaceShip.x;
         this.emitter.y = this.playerSpaceShip.y + 50;
         this.emitter.setXSpeed(this.playerSpaceShip.body.velocity.x, this.playerSpaceShip.body.velocity.x);
         this.emitter.setYSpeed(this.playerSpaceShip.body.velocity.y + 150, this.playerSpaceShip.body.velocity.y + 150);
         //emitter.start(false, 2000, 750, 1, 20);
         this.emitter.on = true;
-
     }
 
     //function collectGem2(player, gem) {
@@ -821,9 +822,7 @@ class MyGame {
 
     //  Called if the bullet goes out of the screen
     resetBullet = (bullet) => {
-
         bullet.kill();
-
     }
 
     ////  Called if the bullet hits one of the veg sprites

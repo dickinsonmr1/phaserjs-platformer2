@@ -32,7 +32,7 @@ var MyGame = (function () {
         };
         this.loadSprites = function () {
             // background image
-            //game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
+            //this.game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
             _this.game.load.image('sky', 'assets/sprites/backgrounds/colored_grass.png');
             //game.load.image('sky', 'assets/sprites/backgrounds/blue_land.png');
             // spritesheets for game objects (not in the game map)
@@ -52,7 +52,7 @@ var MyGame = (function () {
         this.loadTilemap = function () {
             // tilemap for level building
             _this.game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
-            //game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
+            //this.game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
             _this.game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
             _this.game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
             _this.game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
@@ -73,8 +73,27 @@ var MyGame = (function () {
             _this.playerHudIcon.anchor.setTo(0, 0);
             //hudGroup.add(playerHudIcon);
             _this.createWorld('level1');
+            _this.createAudio();
+        };
+        this.createAudio = function () {
+            _this.jumpsound = _this.game.add.audio('jump');
+            _this.gemSound = _this.game.add.audio('gemSound');
+            _this.keySound = _this.game.add.audio('key');
+            _this.springSound = _this.game.add.audio('springSound');
+            _this.springSound.allowMultiple = false;
         };
         this.createWorld = function (worldName) {
+            // using the Tiled map editor, here is the order of the layers from back to front:
+            // layer00-image (not currently used)
+            // layer01-background-passable
+            // layer02-nonpassable        
+            // (player spaceship)
+            // (player)
+            // layer07-enemies 
+            // layer05-collectibles
+            // layer03-foreground-passable-semitransparent
+            // layer06-gameobjects        
+            // layer04-foreground-passable-opaque
             _this.map = _this.game.add.tilemap(worldName);
             //map.addTilesetImage('sky', 'backgroundImageLayer');
             _this.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
@@ -167,7 +186,6 @@ var MyGame = (function () {
             _this.layer06 = _this.map.createLayer('layer06-gameobjects');
             _this.layer06.alpha = 0.0; //0.75;
             //map.setCollisionBetween(0, 400, true, layer05, true);
-            // green flag no wind: 146
             _this.springs = _this.game.add.group();
             _this.map.setCollision(_this.tileKeySpring, true, _this.layer06, true);
             _this.map.createFromTiles(_this.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', _this.springs, _this.spring);
@@ -189,7 +207,7 @@ var MyGame = (function () {
             _this.layer03.alpha = 0.5;
             _this.layer03.resizeWorld();
             //---------------------------------------------------------------------------------------------------
-            // FOREGROUND PASSABLE OPAQUE LAYER
+            // FOREGROUND PASSABLE OPAQUE LAYER (front wall of a cave, plant, etc.)
             //---------------------------------------------------------------------------------------------------
             _this.layer04 = _this.map.createLayer('layer04-foreground-passable-opaque');
             _this.layer04.alpha = 1.0;
@@ -197,12 +215,6 @@ var MyGame = (function () {
             // TODO: add HUD stuff here
             // input
             _this.cursors = _this.game.input.keyboard.createCursorKeys();
-            // audio
-            _this.jumpsound = _this.game.add.audio('jump');
-            _this.gemSound = _this.game.add.audio('gemSound');
-            _this.keySound = _this.game.add.audio('key');
-            _this.springSound = _this.game.add.audio('springSound');
-            _this.springSound.allowMultiple = false;
             _this.bullets = _this.game.add.group();
             _this.game.physics.enable(_this.bullets);
             _this.bullets.enableBody = true;
