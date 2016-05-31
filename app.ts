@@ -1,17 +1,26 @@
 ﻿/// <reference path="phaser.d.ts" />
+
+class Constants {
+    public static get tileKeyBlueKey(): number { return 141; }
+    public static get tileKeyGemGreen(): number { return 142; }
+    public static get tileKeyGemRed(): number { return 157; }
+    public static get tileKeyGemYellow(): number { return 134; }
+    public static get tileKeyGemBlue(): number { return 149; }
+    public static get tileKeySpring(): number { return 266; }
+}
+
 class MyGame {
     
     constructor() {
         //this.game = new Phaser.Game(800, 600, Phaser.AUTO, 'content', { preload: this.preload, create: this.create });
-        this.game = new Phaser.Game(1280, 720, Phaser.CANVAS, 'phaser-example', { preload: this.preload, create: this.create, update: this.update, render: this.render });
+        this.game = new Phaser.Game(1280, 720, Phaser.CANVAS, 'phaser-platformer', { preload: this.preload, create: this.create, update: this.update, render: this.render });
     }
     
     game: Phaser.Game;
     
+    // map stuff
     map;
     tileset;
-    //var layerNonpassable;
-
     layer01;
     layer02;
     layer03;
@@ -19,66 +28,60 @@ class MyGame {
     layer05;
     layer06;
     layer07;
-
-    players = ['alienBeige', 'alienBlue', 'alienGreen', 'alienPink', 'alienYellow'];
+    sky;
+        
+    // player selection
+    playerPrefixes = ['alienBeige', 'alienBlue', 'alienGreen', 'alienPink', 'alienYellow'];
     selectedPlayerIndex = 0;
-
-    gems;
-
-    player;
+    
+    // player stuff
+    player; // player instance
     playerSpaceShip;
-    cursors;
+    
     playerGun;
-    playerGunBullet;
-
+    //playerGunBullet;
+    bullet;
     bullets;
     bulletTime = 0;
 
+    // input
+    cursors;
+
+    // enemy stuff
     enemy;
     enemies;
-
-    enemyPhysics;
     enemiesPhysics;
-
-    enemyNonGravity;
     enemiesNonGravity;
 
-    enemySpawnPoints;
-    spring;
-    spring2;
-    springs;
+    // world stuff
+    //spring;
+    springs;    
+    //gems;
 
-    tileKeyBlueKey = 141;
-    tileKeyGemGreen = 142;
-    tileKeyGemRed = 157;
-    tileKeyGemYellow = 134;
-    tileKeyGemBlue = 149;
-    tileKeySpring = 266;
-
-
-    worldScale = 1;
-
+    // display stuff
     playerDrawScale = 0.50;
     enemyDrawScale = 1;
-
+    worldScale = 1;
+    
     enemySpeed = 200;
 
+    // particles
     emitter;
     emitTime;
 
+    // initialization stuff
     isWorldLoaded = false;
 
+    // HUD
     hudGroup;
     playerHudIcon;
     
-    sky;
+    // audio
     jumpsound;
     gemSound;
     keySound;
     springSound;
-    
-    bullet;
-        
+                
     preload = () => {
         this.loadAudio();
         this.loadSprites();
@@ -173,6 +176,7 @@ class MyGame {
         // layer07-enemies 
         // layer05-collectibles
         // layer03-foreground-passable-semitransparent
+            // like water... one idea is to make this automatically move
         // layer06-gameobjects        
         // layer04-foreground-passable-opaque
         
@@ -228,10 +232,10 @@ class MyGame {
         this.enemies = this.game.add.group();
 
         this.enemiesPhysics = this.game.add.group();  // removed 324
-        this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', this.enemiesPhysics, this.enemyPhysics);
+        this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', this.enemiesPhysics);//, this.enemyPhysics);
 
         this.enemiesNonGravity = this.game.add.group();
-        this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', this.enemiesNonGravity, this.enemyNonGravity);
+        this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', this.enemiesNonGravity);//, this.enemyNonGravity);
 
         this.layer07.resizeWorld();
 
@@ -267,19 +271,19 @@ class MyGame {
         //map.setCollisionBetween(0, 400, true, layer05, true);
 
         // gem stuff... http://phaser.io/examples/v2/tilemaps/tile-callbacks
-        this.map.setCollision(this.tileKeyGemRed, true, this.layer05, true);
-        this.map.setCollision(this.tileKeyGemGreen, true, this.layer05, true);
-        this.map.setCollision(this.tileKeyGemYellow, true, this.layer05, true);
-        this.map.setCollision(this.tileKeyGemBlue, true, this.layer05, true);
+        this.map.setCollision(Constants.tileKeyGemRed, true, this.layer05, true);
+        this.map.setCollision(Constants.tileKeyGemGreen, true, this.layer05, true);
+        this.map.setCollision(Constants.tileKeyGemYellow, true, this.layer05, true);
+        this.map.setCollision(Constants.tileKeyGemBlue, true, this.layer05, true);
 
-        this.map.setTileIndexCallback(this.tileKeyGemRed, this.collectGem, this, this.layer05);
-        this.map.setTileIndexCallback(this.tileKeyGemGreen, this.collectGem, this, this.layer05);
-        this.map.setTileIndexCallback(this.tileKeyGemYellow, this.collectGem, this, this.layer05);
-        this.map.setTileIndexCallback(this.tileKeyGemBlue, this.collectGem, this, this.layer05);
+        this.map.setTileIndexCallback(Constants.tileKeyGemRed, this.collectGem, this, this.layer05);
+        this.map.setTileIndexCallback(Constants.tileKeyGemGreen, this.collectGem, this, this.layer05);
+        this.map.setTileIndexCallback(Constants.tileKeyGemYellow, this.collectGem, this, this.layer05);
+        this.map.setTileIndexCallback(Constants.tileKeyGemBlue, this.collectGem, this, this.layer05);
 
         // key
-        this.map.setCollision(this.tileKeyBlueKey, true, this.layer05, true);
-        this.map.setTileIndexCallback(this.tileKeyBlueKey, this.collectKey, this, this.layer05);
+        this.map.setCollision(Constants.tileKeyBlueKey, true, this.layer05, true);
+        this.map.setTileIndexCallback(Constants.tileKeyBlueKey, this.collectKey, this, this.layer05);
 
         // green flag no wind: 146
         this.layer05.resizeWorld();
@@ -292,9 +296,9 @@ class MyGame {
         //map.setCollisionBetween(0, 400, true, layer05, true);
 
         this.springs = this.game.add.group();        
-        this.map.setCollision(this.tileKeySpring, true, this.layer06, true);
+        this.map.setCollision(Constants.tileKeySpring, true, this.layer06, true);
 
-        this.map.createFromTiles(this.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', this.springs, this.spring);
+        this.map.createFromTiles(Constants.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', this.springs);//, this.spring);
         this.layer06.resizeWorld();
 
         this.game.physics.enable(this.springs);
@@ -370,7 +374,9 @@ class MyGame {
         if (!this.player.isInSpaceShip) {
             this.game.physics.arcade.collide(this.player, this.layer02);
             this.game.physics.arcade.collide(this.player, this.layer05);
-            this.game.physics.arcade.collide(this.player, this.springs, this.playerTouchingSpringHandler, null, this);
+            if(!this.game.physics.arcade.collide(this.player, this.springs, this.playerTouchingSpringHandler, null, this)) {
+                this.player.isCurrentlyTouchingSpring = false;
+            }
 
             this.game.physics.arcade.collide(this.playerSpaceShip, this.player, this.playerEnteringSpaceshipCollisionHandler, null, this);
 
@@ -400,11 +406,12 @@ class MyGame {
 
     playerTouchingSpringHandler = (player, springs) => {
 
-        if (!player.isInSpaceShip) {
+        if (!player.isInSpaceShip && !player.isCurrentlyTouchingSpring) {
             //if(springSound.)
             //if (tile.alpha > 0) {
             player.body.velocity.y = -650;
             this.springSound.play();
+            player.isCurrentlyTouchingSpring = true;
         }
     }
 
@@ -442,7 +449,7 @@ class MyGame {
                 this.player.anchor.setTo(.5, .5);
                 this.player.scale.x = -this.playerDrawScale;
                 this.player.scale.y = this.playerDrawScale
-                this.player.animations.play(this.players[this.selectedPlayerIndex] + 'walk');
+                this.player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
 
                 this.playerGun.scale.x = -0.8;
                 this.playerGun.scale.y = 0.8;
@@ -460,7 +467,7 @@ class MyGame {
                 this.player.anchor.setTo(.5, .5);
                 this.player.scale.x = this.playerDrawScale;
                 this.player.scale.y = this.playerDrawScale;
-                this.player.animations.play(this.players[this.selectedPlayerIndex] + 'walk');
+                this.player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
 
                 this.playerGun.scale.x = 0.8;
                 this.playerGun.scale.y = 0.8;
@@ -471,7 +478,7 @@ class MyGame {
             }
             else if (this.cursors.down.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.S)) {
                 if (this.player.body.onFloor()) {
-                    this.player.frameName = this.players[this.selectedPlayerIndex] + "_duck.png";
+                    this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_duck.png";
 
                     this.playerGun.body.y = this.player.body.y - 10;
                 }
@@ -479,7 +486,7 @@ class MyGame {
             else {
                 //  Stand still
                 this.player.animations.stop();
-                this.player.frameName = this.players[this.selectedPlayerIndex] + "_stand.png";
+                this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
                 //player.frame = 4;\
 
                 this.playerGun.body.y = this.player.body.y - 22;
@@ -489,7 +496,7 @@ class MyGame {
                 //player.frameName = "alienBeige_duck.png";
             }
             else {
-                this.player.frameName = this.players[this.selectedPlayerIndex] + "_jump.png";
+                this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_jump.png";
             }
 
 
@@ -727,10 +734,10 @@ class MyGame {
         this.player.scale.setTo(this.playerDrawScale, this.playerDrawScale);
         this.player.anchor.setTo(.5, .5);
 
-        for (var i = 0; i < this.players.length; i++) {
-            this.player.animations.add(this.players[i] + 'walk', Phaser.Animation.generateFrameNames(this.players[i] + '_walk', 1, 2, '.png'), 10);
-            this.player.animations.add(this.players[i] + 'swim', Phaser.Animation.generateFrameNames(this.players[i] + + '_swim', 1, 2, '.png'), 10);
-            this.player.animations.add(this.players[i] + 'climb', Phaser.Animation.generateFrameNames(this.players[i] + '_climb', 1, 2, '.png'), 10);
+        for (var i = 0; i < this.playerPrefixes.length; i++) {
+            this.player.animations.add(this.playerPrefixes[i] + 'walk', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_walk', 1, 2, '.png'), 10);
+            this.player.animations.add(this.playerPrefixes[i] + 'swim', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + + '_swim', 1, 2, '.png'), 10);
+            this.player.animations.add(this.playerPrefixes[i] + 'climb', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_climb', 1, 2, '.png'), 10);
         }
 
         this.game.physics.enable(this.player);
@@ -740,11 +747,13 @@ class MyGame {
         this.player.body.linearDamping = 1;
         this.player.body.collideWorldBounds = true;
 
-        this.player.frameName = this.players[this.selectedPlayerIndex] + "_stand.png";
+        this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
 
         this.player.isInSpaceShip = false;
 
         this.player.isFacingRight = true;
+        
+        this.player.isCurrentlyTouchingSpring = false;
 
         this.playerGun = this.game.add.sprite(64, 64, 'playerGun', 'playerGun');
         this.playerGun.anchor.setTo(0.5, 0.5);
