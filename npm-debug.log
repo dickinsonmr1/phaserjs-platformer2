@@ -1,22 +1,24 @@
 0 info it worked if it ends with ok
-1 verbose cli [ 'C:\\Program Files (x86)\\nodejs\\node.exe',
-1 verbose cli   'C:\\Users\\Mark\\AppData\\Roaming\\npm\\node_modules\\npm\\bin\\npm-cli.js',
-1 verbose cli   'start' ]
-2 info using npm@3.8.6
-3 info using node@v4.4.2
-4 verbose stack Error: ENOENT: no such file or directory, open 'd:\Source\phaser-typescript-platformer\package.json'
-4 verbose stack     at Error (native)
-5 verbose cwd d:\Source\phaser-typescript-platformer
-6 error Windows_NT 10.0.10240
-7 error argv "C:\\Program Files (x86)\\nodejs\\node.exe" "C:\\Users\\Mark\\AppData\\Roaming\\npm\\node_modules\\npm\\bin\\npm-cli.js" "start"
-8 error node v4.4.2
-9 error npm  v3.8.6
-10 error path d:\Source\phaser-typescript-platformer\package.json
-11 error code ENOENT
-12 error errno -4058
-13 error syscall open
-14 error enoent ENOENT: no such file or directory, open 'd:\Source\phaser-typescript-platformer\package.json'
-15 error enoent ENOENT: no such file or directory, open 'd:\Source\phaser-typescript-platformer\package.json'
-15 error enoent This is most likely not a problem with npm itself
-15 error enoent and is related to npm not being able to find a file.
-16 verbose exit [ -4058, true ]
+1 verbose cli [ '/usr/local/bin/node', '/usr/local/bin/npm', 'start' ]
+2 info using npm@3.10.10
+3 info using node@v6.11.0
+4 verbose stack Error: missing script: start
+4 verbose stack     at run (/usr/local/lib/node_modules/npm/lib/run-script.js:151:19)
+4 verbose stack     at /usr/local/lib/node_modules/npm/lib/run-script.js:61:5
+4 verbose stack     at /usr/local/lib/node_modules/npm/node_modules/read-package-json/read-json.js:356:5
+4 verbose stack     at checkBinReferences_ (/usr/local/lib/node_modules/npm/node_modules/read-package-json/read-json.js:320:45)
+4 verbose stack     at final (/usr/local/lib/node_modules/npm/node_modules/read-package-json/read-json.js:354:3)
+4 verbose stack     at then (/usr/local/lib/node_modules/npm/node_modules/read-package-json/read-json.js:124:5)
+4 verbose stack     at /usr/local/lib/node_modules/npm/node_modules/read-package-json/read-json.js:311:12
+4 verbose stack     at /usr/local/lib/node_modules/npm/node_modules/graceful-fs/graceful-fs.js:78:16
+4 verbose stack     at tryToString (fs.js:456:3)
+4 verbose stack     at FSReqWrap.readFileAfterClose [as oncomplete] (fs.js:443:12)
+5 verbose cwd /Applications/MAMP/htdocs/phaserjs-platformer2
+6 error Darwin 16.6.0
+7 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "start"
+8 error node v6.11.0
+9 error npm  v3.10.10
+10 error missing script: start
+11 error If you need help, you may report this error at:
+11 error     <https://github.com/npm/npm/issues>
+12 verbose exit [ 1, true ]

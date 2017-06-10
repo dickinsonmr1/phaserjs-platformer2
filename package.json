@@ -1,0 +1,19 @@
+{
+  "name": "phaserjs-platformer2",
+  "version": "1.0.0",
+  "description": "Alien Platformer",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dickinsonmr1/phaserjs-platformer2.git"
+  },
+  "author": "Mark Dickinson",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dickinsonmr1/phaserjs-platformer2/issues"
+  },
+  "homepage": "https://github.com/dickinsonmr1/phaserjs-platformer2#readme"
+}
