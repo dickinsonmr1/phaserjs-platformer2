@@ -85,53 +85,53 @@ class MyGame {
     springSound;
                 
     preload = () => {
-        this.loadAudio();
-        this.loadSprites();
-        this.loadTilemap();
+        this.loadAudio(this.game);
+        this.loadSprites(this.game);
+        this.loadTilemap(this.game);
     }
 
-    loadAudio = () => {
+    loadAudio = (game) => {
         //game.load.tilemap('mario', 'assets/tilemaps/maps/super_mario.json', null, Phaser.Tilemap.TILED_JSON);
         //game.load.image('tiles', 'assets/tilemaps/tiles/super_mario.png');
         //game.load.image('player', 'assets/sprites/phaser-dude.png');
-        this.game.load.audio('jump', 'assets/audio/jump.wav');
-        this.game.load.audio('gemSound', 'assets/audio/coin.wav');
-        this.game.load.audio('key', 'assets/audio/key.wav');
-        this.game.load.audio('springSound', 'assets/audio/spring.wav');
+        game.load.audio('jump', 'assets/audio/jump.wav');
+        game.load.audio('gemSound', 'assets/audio/coin.wav');
+        game.load.audio('key', 'assets/audio/key.wav');
+        game.load.audio('springSound', 'assets/audio/spring.wav');
     }
 
-    loadSprites = () =>  {
+    loadSprites = (game) =>  {
         // background image
         //this.game.load.image('sky', 'assets/sprites/backgrounds/bg_desert_x3.png');
-        this.game.load.image('sky', 'assets/sprites/backgrounds/colored_grass.png');
+        game.load.image('sky', 'assets/sprites/backgrounds/colored_grass.png');
         //game.load.image('sky', 'assets/sprites/backgrounds/blue_land.png');
 
         // spritesheets for game objects (not in the game map)
-        this.game.load.atlasXML('playerSprites', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
-        this.game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
-        this.game.load.atlasXML('tileObjectSprites', 'assets/sprites/objects/spritesheet_complete.png', 'assets/sprites/objects/spritesheet_complete.xml');
-        this.game.load.atlasXML('alienShipSprites', 'assets/sprites/ships/spritesheet_spaceships.png', 'assets/sprites/ships/spritesheet_spaceships.xml');
-        this.game.load.atlasXML('alienShipLaserSprites', 'assets/sprites/ships/spritesheet_lasers.png', 'assets/sprites/ships/spritesheet_lasers.xml');
+        game.load.atlasXML('enemySprites', 'assets/sprites/enemies/enemies.png', 'assets/sprites/enemies/enemies.xml');
+        game.load.atlasXML('tileObjectSprites', 'assets/sprites/objects/spritesheet_complete.png', 'assets/sprites/objects/spritesheet_complete.xml');
+        game.load.atlasXML('playerSprites', 'assets/sprites/player/spritesheet_players.png', 'assets/sprites/player/spritesheet_players.xml');
+        game.load.atlasXML('alienShipSprites', 'assets/sprites/ships/spritesheet_spaceships.png', 'assets/sprites/ships/spritesheet_spaceships.xml');
+        game.load.atlasXML('alienShipLaserSprites', 'assets/sprites/ships/spritesheet_lasers.png', 'assets/sprites/ships/spritesheet_lasers.xml');
 
         // initial placeholders for animated objects
-        this.game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
-        this.game.load.image('piranha', 'assets/sprites/enemies/piranha.png');
-        this.game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
-        this.game.load.image('engineExhaust', 'assets/sprites/ships/laserblue3.png');
+        game.load.image('ghost', 'assets/sprites/enemies/ghost.png');
+        game.load.image('piranha', 'assets/sprites/enemies/piranha.png');
+        game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
+        game.load.image('engineExhaust', 'assets/sprites/ships/laserblue3.png');
 
-        this.game.load.image('playerGun', 'assets/sprites/player/raygunPurpleBig.png');
-        this.game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot.png');
+        game.load.image('playerGun', 'assets/sprites/player/raygunPurpleBig.png');
+        game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot.png');
     }
 
-    loadTilemap = () =>  {
+    loadTilemap = (game) =>  {
         // tilemap for level building
-        this.game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
+        game.load.tilemap('level1', 'assets/tilemaps/maps/world-01-02.json', null, Phaser.Tilemap.TILED_JSON);
         //this.game.load.tilemap('level1', 'assets/tilemaps/maps/world-00-overworld.json', null, Phaser.Tilemap.TILED_JSON);
-        this.game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
-        this.game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
-        this.game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
-        this.game.load.image('platformerRequestTiles', 'assets/tilemaps/tiles/platformer-requests-sheet_64x64.png');
-        this.game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
+        game.load.image('tiles', 'assets/tilemaps/tiles/spritesheet_tiles_64x64.png');
+        game.load.image('items', 'assets/tilemaps/tiles/spritesheet_items_64x64.png');
+        game.load.image('ground', 'assets/tilemaps/tiles/spritesheet_ground_64x64.png');
+        game.load.image('platformerRequestTiles', 'assets/tilemaps/tiles/platformer-requests-sheet_64x64.png');
+        game.load.image('enemyTiles', 'assets/tilemaps/tiles/spritesheet_enemies_64x64.png');
     }
 
     create = () =>  {
@@ -154,19 +154,19 @@ class MyGame {
         
         //hudGroup.add(playerHudIcon);
 
-        this.createWorld('level1');
-        this.createAudio();       
+        this.createWorld('level1', this.game);
+        this.createAudio(this.game);       
     }
 
-    createAudio = () => {
-        this.jumpsound = this.game.add.audio('jump');
-        this.gemSound = this.game.add.audio('gemSound');
-        this.keySound = this.game.add.audio('key');
-        this.springSound = this.game.add.audio('springSound');
+    createAudio = (game) => {
+        this.jumpsound = game.add.audio('jump');
+        this.gemSound = game.add.audio('gemSound');
+        this.keySound = game.add.audio('key');
+        this.springSound = game.add.audio('springSound');
         this.springSound.allowMultiple = false;
     }
     
-    createWorld = (worldName) => {
+    createWorld = (worldName, game) => {
 
         // using the Tiled map editor, here is the order of the layers from back to front:
         
@@ -182,7 +182,7 @@ class MyGame {
         // layer06-gameobjects        
         // layer04-foreground-passable-opaque
         
-        this.map = this.game.add.tilemap(worldName);
+        this.map = game.add.tilemap(worldName);
         //map.addTilesetImage('sky', 'backgroundImageLayer');
         this.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
         this.map.addTilesetImage('spritesheet_items_64x64', 'items');
@@ -222,26 +222,26 @@ class MyGame {
 
         // add player between background and foreground layers
 
-        this.createSpaceShip();
+        this.playerSpaceShip = this.createSpaceShip(this.game);
 
-        this.createPlayer();
+        this.createPlayer(this.player, this.playerGun);
 
         //---------------------------------------------------------------------------------------------------
         // ENEMIES
         //---------------------------------------------------------------------------------------------------
         this.layer07 = this.map.createLayer('layer07-enemies');
         this.layer07.alpha = 0.1;
-        this.enemies = this.game.add.group();
+        this.enemies = game.add.group();
 
-        this.enemiesPhysics = this.game.add.group();  // removed 324
+        this.enemiesPhysics = game.add.group();  // removed 324
         this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', this.enemiesPhysics);//, this.enemyPhysics);
 
-        this.enemiesNonGravity = this.game.add.group();
+        this.enemiesNonGravity = game.add.group();
         this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', this.enemiesNonGravity);//, this.enemyNonGravity);
 
         this.layer07.resizeWorld();
 
-        this.game.physics.enable(this.enemiesNonGravity);
+        game.physics.enable(this.enemiesNonGravity);
         this.enemiesNonGravity.forEach(function (enemy) {
             enemy.enemyType = "nonGravity";
             enemy.movementTime = 0;
@@ -254,7 +254,7 @@ class MyGame {
         }, this);
         this.enemies.add(this.enemiesNonGravity);
 
-        this.game.physics.enable(this.enemiesPhysics);
+        game.physics.enable(this.enemiesPhysics);
         this.enemiesPhysics.forEach(function (enemy) {
             enemy.enemyType = "physics";
             enemy.enableBody = true;
@@ -297,13 +297,13 @@ class MyGame {
         this.layer06.alpha = 0.0;//0.75;
         //map.setCollisionBetween(0, 400, true, layer05, true);
 
-        this.springs = this.game.add.group();        
+        this.springs = game.add.group();        
         this.map.setCollision(Constants.tileKeySpring, true, this.layer06, true);
 
         this.map.createFromTiles(Constants.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', this.springs);//, this.spring);
         this.layer06.resizeWorld();
 
-        this.game.physics.enable(this.springs);
+        game.physics.enable(this.springs);
         this.springs.forEach(function (item) {        
             item.enableBody = true;
             item.immovable = true;
@@ -332,10 +332,10 @@ class MyGame {
         // TODO: add HUD stuff here
 
         // input
-        this.cursors = this.game.input.keyboard.createCursorKeys();
+        this.cursors = game.input.keyboard.createCursorKeys();
 
-        this.bullets = this.game.add.group();
-        this.game.physics.enable(this.bullets);
+        this.bullets = game.add.group();
+        game.physics.enable(this.bullets);
         this.bullets.enableBody = true;
         this.bullets.allowGravity = false;
 
@@ -367,7 +367,7 @@ class MyGame {
 
             this.updateEnemies(this.enemiesPhysics);
 
-            this.updateHud();
+            this.updateHud(this.playerHudIcon);
         }
     }
 
@@ -417,88 +417,88 @@ class MyGame {
         }
     }
 
-    playerExitingSpaceship = () => {
-        this.player.isInSpaceShip = false;
-        this.player.body.velocity.y = -400;
-        this.player.body.x = this.playerSpaceShip.body.x +50;
-        this.player.renderable = true;
-        this.playerSpaceShip.body.velocity.x = 0;
-        this.playerSpaceShip.body.velocity.y = 0;
-        this.playerSpaceShip.frameName = "shipBeige.png"; //players[selectedPlayerIndex] + "_stand.png";
+    playerExitingSpaceship = (player, playerSpaceShip) => {
+        player.isInSpaceShip = false;
+        player.body.velocity.y = -400;
+        player.body.x = playerSpaceShip.body.x +50;
+        player.renderable = true;
+        playerSpaceShip.body.velocity.x = 0;
+        playerSpaceShip.body.velocity.y = 0;
+        playerSpaceShip.frameName = "shipBeige.png"; //players[selectedPlayerIndex] + "_stand.png";
 
         this.emitter.on = false;
     }
 
-    updatePlayer = () => {
+    updatePlayer = (player, playerGun, playerSpaceShip, keyboard) => {
 
-        if (!this.player.isInSpaceShip)
+        if (!player.isInSpaceShip)
         {
-            this.player.body.velocity.x = 0;
+            player.body.velocity.x = 0;
 
             if (this.cursors.up.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.W) || this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
-                if (this.player.body.onFloor()) {
-                    this.player.body.velocity.y = -500;
+                if (player.body.onFloor()) {
+                    player.body.velocity.y = -500;
                     this.jumpsound.play();
                 }
             }
 
             if (this.cursors.left.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
 
-                this.player.isFacingRight = false;
+                player.isFacingRight = false;
 
                 //player.body.velocity.x = -150;
-                this.player.body.velocity.x = -200;
-                this.player.anchor.setTo(.5, .5);
-                this.player.scale.x = -this.playerDrawScale;
-                this.player.scale.y = this.playerDrawScale
-                this.player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
+                player.body.velocity.x = -200;
+                player.anchor.setTo(.5, .5);
+                player.scale.x = -this.playerDrawScale;
+                player.scale.y = this.playerDrawScale
+                player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
 
-                this.playerGun.scale.x = -0.8;
-                this.playerGun.scale.y = 0.8;
-                this.playerGun.anchor.setTo(.5, .5);
-                this.playerGun.body.x = this.player.body.x - 45;
+                playerGun.scale.x = -0.8;
+                playerGun.scale.y = 0.8;
+                playerGun.anchor.setTo(.5, .5);
+                playerGun.body.x = player.body.x - 45;
 
-                this.playerGun.body.y = this.player.body.y - 22;
+                playerGun.body.y = player.body.y - 22;
             }
             else if (this.cursors.right.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.D)) {
 
-                this.player.isFacingRight = true;
+                player.isFacingRight = true;
 
                 //player.body.velocity.x = 150;
-                this.player.body.velocity.x = 200;
-                this.player.anchor.setTo(.5, .5);
-                this.player.scale.x = this.playerDrawScale;
-                this.player.scale.y = this.playerDrawScale;
-                this.player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
+                player.body.velocity.x = 200;
+                player.anchor.setTo(.5, .5);
+                player.scale.x = this.playerDrawScale;
+                player.scale.y = this.playerDrawScale;
+                player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
 
-                this.playerGun.scale.x = 0.8;
-                this.playerGun.scale.y = 0.8;
-                this.playerGun.anchor.setTo(.5, .5);
-                this.playerGun.body.x = this.player.body.x + 20;
+                playerGun.scale.x = 0.8;
+                playerGun.scale.y = 0.8;
+                playerGun.anchor.setTo(.5, .5);
+                playerGun.body.x = player.body.x + 20;
 
-                this.playerGun.body.y = this.player.body.y - 22;
+                playerGun.body.y = player.body.y - 22;
             }
             else if (this.cursors.down.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-                if (this.player.body.onFloor()) {
-                    this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_duck.png";
+                if (player.body.onFloor()) {
+                    player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_duck.png";
 
-                    this.playerGun.body.y = this.player.body.y - 10;
+                    playerGun.body.y = player.body.y - 10;
                 }
             }
             else {
                 //  Stand still
-                this.player.animations.stop();
-                this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
+                player.animations.stop();
+                player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
                 //player.frame = 4;\
 
-                this.playerGun.body.y = this.player.body.y - 22;
+                playerGun.body.y = player.body.y - 22;
             }
 
-            if (this.player.body.onFloor()) {
+            if (player.body.onFloor()) {
                 //player.frameName = "alienBeige_duck.png";
             }
             else {
-                this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_jump.png";
+                player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_jump.png";
             }
 
             if (this.game.input.keyboard.isDown(Phaser.Keyboard.CONTROL)) {
@@ -520,10 +520,10 @@ class MyGame {
 
 
 
-            if (this.player.isFacingRight) {
+            if (player.isFacingRight) {
         
             }
-            if (!this.player.isFacingRight) {
+            if (!player.isFacingRight) {
 
                 
             }
@@ -534,33 +534,33 @@ class MyGame {
                 //emitTime = 0;
                 this.particleBurst();
             //}
-            this.playerSpaceShip.body.velocity.x = 0;
-            this.playerSpaceShip.body.velocity.y = 0;
+            playerSpaceShip.body.velocity.x = 0;
+            playerSpaceShip.body.velocity.y = 0;
 
-            this.player.body.x = this.playerSpaceShip.body.x;
-            this.player.body.y = this.playerSpaceShip.body.y;
-            this.player.renderable = false;
+            player.body.x = playerSpaceShip.body.x;
+            player.body.y = playerSpaceShip.body.y;
+            player.renderable = false;
 
-            this.playerSpaceShip.frameName = "shipBeige_manned.png"; //players[selectedPlayerIndex] + "_stand.png";
+            playerSpaceShip.frameName = "shipBeige_manned.png"; //players[selectedPlayerIndex] + "_stand.png";
             if (this.cursors.up.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.W) || this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
-                this.playerSpaceShip.body.velocity.y = -300;
-                this.playerSpaceShip.anchor.setTo(.5, .5);
+                playerSpaceShip.body.velocity.y = -300;
+                playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }
             else if (this.cursors.down.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.S)) {
-                this.playerSpaceShip.body.velocity.y = 300;
-                this.playerSpaceShip.anchor.setTo(.5, .5);
+                playerSpaceShip.body.velocity.y = 300;
+                playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }
 
             if (this.cursors.left.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
-                this.playerSpaceShip.body.velocity.x = -300;
-                this.playerSpaceShip.anchor.setTo(.5, .5);
+                playerSpaceShip.body.velocity.x = -300;
+                playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }
             else if (this.cursors.right.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.D)) {
-                this.playerSpaceShip.body.velocity.x = 300;
-                this.playerSpaceShip.anchor.setTo(.5, .5);
+                playerSpaceShip.body.velocity.x = 300;
+                playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }        
             else {
@@ -572,7 +572,7 @@ class MyGame {
 
             if (this.game.input.keyboard.isDown(Phaser.Keyboard.E)) {
 
-                this.playerExitingSpaceship();
+                this.playerExitingSpaceship(player, playerSpaceShip);
 
                 //particleBurst();
             }
@@ -681,9 +681,8 @@ class MyGame {
         }, this);
     }
 
-    updateHud = () => {
-        //hudGroup.bringToTop();
-        this.playerHudIcon.bringToTop();
+    updateHud = (playerHudIcon) => {
+        playerHudIcon.bringToTop();
     }
 
     render = () =>  {
@@ -729,50 +728,52 @@ class MyGame {
         return false;
     }
 
-    createPlayer = () =>  {
+    createPlayer = (player, playerGun) =>  {
 
-        this.player = this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
-        this.player.scale.setTo(this.playerDrawScale, this.playerDrawScale);
-        this.player.anchor.setTo(.5, .5);
+        player = this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
+        player.scale.setTo(this.playerDrawScale, this.playerDrawScale);
+        player.anchor.setTo(.5, .5);
 
         for (var i = 0; i < this.playerPrefixes.length; i++) {
-            this.player.animations.add(this.playerPrefixes[i] + 'walk', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_walk', 1, 2, '.png'), 10);
-            this.player.animations.add(this.playerPrefixes[i] + 'swim', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + + '_swim', 1, 2, '.png'), 10);
-            this.player.animations.add(this.playerPrefixes[i] + 'climb', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_climb', 1, 2, '.png'), 10);
+            player.animations.add(this.playerPrefixes[i] + 'walk', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_walk', 1, 2, '.png'), 10);
+            player.animations.add(this.playerPrefixes[i] + 'swim', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + + '_swim', 1, 2, '.png'), 10);
+            player.animations.add(this.playerPrefixes[i] + 'climb', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_climb', 1, 2, '.png'), 10);
         }
 
-        this.game.physics.enable(this.player);
+        this.game.physics.enable(player);
         this.game.physics.arcade.gravity.y = 600;
-        this.player.body.setSize(64, 64, 0, 47);
-        this.player.body.bounce.y = 0.05;
-        this.player.body.linearDamping = 1;
-        this.player.body.collideWorldBounds = true;
+        player.body.setSize(64, 64, 0, 47);
+        player.body.bounce.y = 0.05;
+        player.body.linearDamping = 1;
+        player.body.collideWorldBounds = true;
 
-        this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
+        player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
 
-        this.player.isInSpaceShip = false;
+        player.isInSpaceShip = false;
 
-        this.player.isFacingRight = true;
+        player.isFacingRight = true;
         
-        this.player.isCurrentlyTouchingSpring = false;
+        player.isCurrentlyTouchingSpring = false;
 
-        this.playerGun = this.game.add.sprite(64, 64, 'playerGun', 'playerGun');
-        this.playerGun.anchor.setTo(0.5, 0.5);
+        playerGun = this.game.add.sprite(64, 64, 'playerGun', 'playerGun');
+        playerGun.anchor.setTo(0.5, 0.5);
 
-        this.game.physics.enable(this.playerGun);
+        this.game.physics.enable(playerGun);
 
-        this.game.camera.follow(this.player);
+        this.game.camera.follow(player);
     }
 
-    createSpaceShip = () => {
+    createSpaceShip = (game) => {
 
-        this.playerSpaceShip = this.game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
-        this.game.physics.enable(this.playerSpaceShip);
-        this.playerSpaceShip.body.collideWorldBounds = true;
-        this.playerSpaceShip.enableBody = true;
-        this.playerSpaceShip.body.allowGravity = false;
+        var playerSpaceShip = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
+        game.physics.enable(playerSpaceShip);
+        playerSpaceShip.body.collideWorldBounds = true;
+        playerSpaceShip.enableBody = true;
+        playerSpaceShip.body.allowGravity = false;
 
         this.createSpaceShipExhaustEmitter();
+
+        return playerSpaceShip;
     }
 
     createSpaceShipExhaustEmitter = () => {
