@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/dickinsonmr1/phaserjs-platformer2/issues"
   },
-  "homepage": "https://github.com/dickinsonmr1/phaserjs-platformer2#readme"
+  "homepage": "https://github.com/dickinsonmr1/phaserjs-platformer2#readme",
+  "dependencies": {
+    "http-server": "^0.10.0"
+  }
 }

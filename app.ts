@@ -1,4 +1,4 @@
-﻿/// <reference path="phaser.d.ts" />
+﻿﻿/// <reference path="phaser.d.ts" />
 
 class Constants {
     public static get tileKeyBlueKey(): number { return 141; }
@@ -43,6 +43,8 @@ class MyGame {
     bullet;
     bullets;
     bulletTime = 0;
+    bulletDrawOffsetX = 6;
+    bulletDrawOffsetY = 8;
 
     // input
     cursors;
@@ -358,30 +360,30 @@ class MyGame {
 
             this.emitTime++;
 
-            this.updatePhysics();
+            this.updatePhysics(this.player);
             this.updatePlayer();
-            this.updateBullets();
-            this.processInput();
+            this.updateBullets(this.bullets);
+            this.processInput(this.game.input);
 
-            this.updateEnemies();
+            this.updateEnemies(this.enemiesPhysics);
 
             this.updateHud();
         }
     }
 
-    updatePhysics = () => {
+    updatePhysics = (player) => {
 
-        if (!this.player.isInSpaceShip) {
-            this.game.physics.arcade.collide(this.player, this.layer02);
-            this.game.physics.arcade.collide(this.player, this.layer05);
-            if(!this.game.physics.arcade.collide(this.player, this.springs, this.playerTouchingSpringHandler, null, this)) {
-                this.player.isCurrentlyTouchingSpring = false;
+        if (!player.isInSpaceShip) {
+            this.game.physics.arcade.collide(player, this.layer02);
+            this.game.physics.arcade.collide(player, this.layer05);
+            if(!this.game.physics.arcade.collide(player, this.springs, this.playerTouchingSpringHandler, null, this)) {
+                player.isCurrentlyTouchingSpring = false;
             }
 
-            this.game.physics.arcade.collide(this.playerSpaceShip, this.player, this.playerEnteringSpaceshipCollisionHandler, null, this);
+            this.game.physics.arcade.collide(this.playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
 
-            this.game.physics.arcade.collide(this.player, this.enemiesPhysics);
-            this.game.physics.arcade.collide(this.player, this.enemiesNonGravity);
+            this.game.physics.arcade.collide(player, this.enemiesPhysics);
+            this.game.physics.arcade.collide(player, this.enemiesNonGravity);
         }
         else {
             this.game.physics.arcade.collide(this.playerSpaceShip, this.layer02);
@@ -499,12 +501,11 @@ class MyGame {
                 this.player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_jump.png";
             }
 
-
             if (this.game.input.keyboard.isDown(Phaser.Keyboard.CONTROL)) {
-                this.fireBullet();
+                if(this.bulletIntervalElapsed(this.game.time.now, this.bulletTime)) {
+                    this.fireBullet(this.bullets.getFirstExists(false));
+                }                
             }
-
-        
 
             //if (player.isFacingRight) {
             //    playerGun.body.x = player.body.x + 20;
@@ -591,36 +592,36 @@ class MyGame {
         }
     }
 
-    updateBullets = () => {
+    updateBullets = (bullets) => {
 
-        this.bullets.forEach(function (bullet) {
+        bullets.forEach(function (bullet) {
             bullet.body.velocity.y = 0;
         }, this);
     }
 
-    processInput = () => {
+    processInput = (input) => {
 
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.NUMPAD_0)) {
+        if (input.keyboard.isDown(Phaser.Keyboard.NUMPAD_0)) {
             this.selectedPlayerIndex = 0;
         }
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.NUMPAD_1)) {
+        if (input.keyboard.isDown(Phaser.Keyboard.NUMPAD_1)) {
             this.selectedPlayerIndex = 1;
         }
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.NUMPAD_2)) {
+        if (input.keyboard.isDown(Phaser.Keyboard.NUMPAD_2)) {
             this.selectedPlayerIndex = 2;
         }
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.NUMPAD_3)) {
+        if (input.keyboard.isDown(Phaser.Keyboard.NUMPAD_3)) {
             this.selectedPlayerIndex = 3;
         }
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.NUMPAD_4)) {
+        if (input.keyboard.isDown(Phaser.Keyboard.NUMPAD_4)) {
             this.selectedPlayerIndex = 4;
         }
 
         // zoom
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.Q)) {
+        if (input.keyboard.isDown(Phaser.Keyboard.Q)) {
             this.worldScale += 0.05;
         }
-        else if (this.game.input.keyboard.isDown(Phaser.Keyboard.Z)) {
+        else if (input.keyboard.isDown(Phaser.Keyboard.Z)) {
             this.worldScale -= 0.05;
         }
 
@@ -631,9 +632,9 @@ class MyGame {
         this.game.world.scale.set(this.worldScale);
     }
 
-    updateEnemies = () => {
+    updateEnemies = (enemiesPhysics) => {
 
-        this.enemiesPhysics.forEach(function (enemy) {
+        enemiesPhysics.forEach(function (enemy) {
             //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
 
             if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
@@ -807,26 +808,30 @@ class MyGame {
     //}
 
 
-    fireBullet = () => {
+    fireBullet = (bullet) => {
 
         if (this.game.time.now > this.bulletTime) {
-            this.bullet = this.bullets.getFirstExists(false);
+            //this.bullet = this.bullets.getFirstExists(false);
 
-            if (this.bullet) {
+            if (bullet) {
                 if (this.player.isFacingRight) {
-                    this.bullet.reset(this.playerGun.body.x + 6, this.playerGun.body.y - 8);
-                    this.bullet.body.velocity.x = 500;
-                    this.bullet.body.velocity.y = 0;
+                    bullet.reset(this.playerGun.body.x + 6, this.playerGun.body.y - 8);
+                    bullet.body.velocity.x = 500;
+                    bullet.body.velocity.y = 0;
                 }
                 else {
-                    this.bullet.reset(this.playerGun.body.x - 20, this.playerGun.body.y - 8);
-                    this.bullet.body.velocity.x = -500;
-                    this.bullet.body.velocity.y = 0;
+                    bullet.reset(this.playerGun.body.x - 20, this.playerGun.body.y - 8);
+                    bullet.body.velocity.x = -500;
+                    bullet.body.velocity.y = 0;
                 }
                 this.bulletTime = this.game.time.now + 150;
             }
         }
 
+    }
+
+    bulletIntervalElapsed = (now, time) =>{
+        return now > time;
     }
 
     //  Called if the bullet goes out of the screen
