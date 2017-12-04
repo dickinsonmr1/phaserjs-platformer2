@@ -154,7 +154,11 @@ class MyGame {
         
         //hudGroup.add(playerHudIcon);
 
-        this.createWorld('level1', this.game);
+        this.createWorld('level1', this.game, this.enemies);
+
+        // input
+        this.cursors = this.game.input.keyboard.createCursorKeys();
+
         this.createAudio(this.game);       
     }
 
@@ -166,7 +170,7 @@ class MyGame {
         this.springSound.allowMultiple = false;
     }
     
-    createWorld = (worldName, game) => {
+    createWorld = (worldName, game, enemies) => {
 
         // using the Tiled map editor, here is the order of the layers from back to front:
         
@@ -231,18 +235,18 @@ class MyGame {
         //---------------------------------------------------------------------------------------------------
         this.layer07 = this.map.createLayer('layer07-enemies');
         this.layer07.alpha = 0.1;
-        this.enemies = game.add.group();
+        enemies = game.add.group();
 
         this.enemiesPhysics = game.add.group();  // removed 324
         this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', this.enemiesPhysics);//, this.enemyPhysics);
 
-        this.enemiesNonGravity = game.add.group();
-        this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', this.enemiesNonGravity);//, this.enemyNonGravity);
+        var enemiesNonGravity = game.add.group();
+        this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity);//, this.enemyNonGravity);
 
         this.layer07.resizeWorld();
 
-        game.physics.enable(this.enemiesNonGravity);
-        this.enemiesNonGravity.forEach(function (enemy) {
+        game.physics.enable(enemiesNonGravity);
+        enemiesNonGravity.forEach(function (enemy) {
             enemy.enemyType = "nonGravity";
             enemy.movementTime = 0;
 
@@ -252,7 +256,7 @@ class MyGame {
             enemy.body.collideWorldBounds = false;
             enemy.isFacingRight = true;
         }, this);
-        this.enemies.add(this.enemiesNonGravity);
+        enemies.add(enemiesNonGravity);
 
         game.physics.enable(this.enemiesPhysics);
         this.enemiesPhysics.forEach(function (enemy) {
@@ -331,9 +335,6 @@ class MyGame {
 
         // TODO: add HUD stuff here
 
-        // input
-        this.cursors = game.input.keyboard.createCursorKeys();
-
         this.bullets = game.add.group();
         game.physics.enable(this.bullets);
         this.bullets.enableBody = true;
@@ -360,8 +361,8 @@ class MyGame {
 
             this.emitTime++;
 
-            this.updatePhysics(this.player);
-            this.updatePlayer();
+            this.updatePhysics(this.player, this.enemies, this.game.physics);
+            this.updatePlayer(this.player, this.playerGun, this.playerSpaceShip, this.game.input.keyboard, this.cursors);
             this.updateBullets(this.bullets);
             this.processInput(this.game.input);
 
@@ -371,30 +372,29 @@ class MyGame {
         }
     }
 
-    updatePhysics = (player) => {
-
+    updatePhysics = (player, enemies, physics) => {
+        
         if (!player.isInSpaceShip) {
-            this.game.physics.arcade.collide(player, this.layer02);
-            this.game.physics.arcade.collide(player, this.layer05);
-            if(!this.game.physics.arcade.collide(player, this.springs, this.playerTouchingSpringHandler, null, this)) {
+            physics.arcade.collide(player, this.layer02);
+            physics.arcade.collide(player, this.layer05);
+            if(!physics.arcade.collide(player, this.springs, this.playerTouchingSpringHandler, null, this)) {
                 player.isCurrentlyTouchingSpring = false;
             }
 
-            this.game.physics.arcade.collide(this.playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
+            physics.arcade.collide(this.playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
 
-            this.game.physics.arcade.collide(player, this.enemiesPhysics);
-            this.game.physics.arcade.collide(player, this.enemiesNonGravity);
+            physics.arcade.collide(player, this.enemiesPhysics);
+            physics.arcade.collide(player, this.enemiesNonGravity);
         }
         else {
-            this.game.physics.arcade.collide(this.playerSpaceShip, this.layer02);
-            this.game.physics.arcade.collide(this.playerSpaceShip, this.layer05);
+            physics.arcade.collide(this.playerSpaceShip, this.layer02);
+            physics.arcade.collide(this.playerSpaceShip, this.layer05);
 
-            this.game.physics.arcade.collide(this.playerSpaceShip, this.enemiesPhysics);
-            this.game.physics.arcade.collide(this.playerSpaceShip, this.enemiesNonGravity);
+            physics.arcade.collide(this.playerSpaceShip, enemies);
         }        
 
-        this.game.physics.arcade.collide(this.enemiesPhysics, this.layer02);
-        this.game.physics.arcade.collide(this.enemiesPhysics, this.enemiesPhysics);
+        physics.arcade.collide(this.enemiesPhysics, this.layer02);
+        physics.arcade.collide(this.enemiesPhysics, this.enemiesPhysics);
     }
 
     playerEnteringSpaceshipCollisionHandler = (playerSpaceShip, player) => {
@@ -429,20 +429,20 @@ class MyGame {
         this.emitter.on = false;
     }
 
-    updatePlayer = (player, playerGun, playerSpaceShip, keyboard) => {
+    updatePlayer = (player, playerGun, playerSpaceShip, keyboard, cursors) => {
 
         if (!player.isInSpaceShip)
         {
             player.body.velocity.x = 0;
 
-            if (this.cursors.up.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.W) || this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+            if (cursors.up.isDown || keyboard.isDown(Phaser.Keyboard.W) || keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
                 if (player.body.onFloor()) {
                     player.body.velocity.y = -500;
                     this.jumpsound.play();
                 }
             }
 
-            if (this.cursors.left.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+            if (cursors.left.isDown || keyboard.isDown(Phaser.Keyboard.A)) {
 
                 player.isFacingRight = false;
 
@@ -460,7 +460,7 @@ class MyGame {
 
                 playerGun.body.y = player.body.y - 22;
             }
-            else if (this.cursors.right.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+            else if (cursors.right.isDown || keyboard.isDown(Phaser.Keyboard.D)) {
 
                 player.isFacingRight = true;
 
@@ -478,7 +478,7 @@ class MyGame {
 
                 playerGun.body.y = player.body.y - 22;
             }
-            else if (this.cursors.down.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+            else if (cursors.down.isDown || keyboard.isDown(Phaser.Keyboard.S)) {
                 if (player.body.onFloor()) {
                     player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_duck.png";
 
@@ -501,7 +501,7 @@ class MyGame {
                 player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_jump.png";
             }
 
-            if (this.game.input.keyboard.isDown(Phaser.Keyboard.CONTROL)) {
+            if (keyboard.isDown(Phaser.Keyboard.CONTROL)) {
                 if(this.bulletIntervalElapsed(this.game.time.now, this.bulletTime)) {
                     this.fireBullet(this.bullets.getFirstExists(false));
                 }                
@@ -542,23 +542,23 @@ class MyGame {
             player.renderable = false;
 
             playerSpaceShip.frameName = "shipBeige_manned.png"; //players[selectedPlayerIndex] + "_stand.png";
-            if (this.cursors.up.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.W) || this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
+            if (cursors.up.isDown || keyboard.isDown(Phaser.Keyboard.W) || keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
                 playerSpaceShip.body.velocity.y = -300;
                 playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }
-            else if (this.cursors.down.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.S)) {
+            else if (cursors.down.isDown || keyboard.isDown(Phaser.Keyboard.S)) {
                 playerSpaceShip.body.velocity.y = 300;
                 playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }
 
-            if (this.cursors.left.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.A)) {
+            if (cursors.left.isDown || keyboard.isDown(Phaser.Keyboard.A)) {
                 playerSpaceShip.body.velocity.x = -300;
                 playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
             }
-            else if (this.cursors.right.isDown || this.game.input.keyboard.isDown(Phaser.Keyboard.D)) {
+            else if (cursors.right.isDown || keyboard.isDown(Phaser.Keyboard.D)) {
                 playerSpaceShip.body.velocity.x = 300;
                 playerSpaceShip.anchor.setTo(.5, .5);
                 //particleBurst();
@@ -570,7 +570,7 @@ class MyGame {
                 //player.frame = 4;
             }
 
-            if (this.game.input.keyboard.isDown(Phaser.Keyboard.E)) {
+            if (keyboard.isDown(Phaser.Keyboard.E)) {
 
                 this.playerExitingSpaceship(player, playerSpaceShip);
 
