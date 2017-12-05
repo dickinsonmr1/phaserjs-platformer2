@@ -383,8 +383,7 @@ class MyGame {
 
             physics.arcade.collide(this.playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
 
-            physics.arcade.collide(player, this.enemiesPhysics);
-            physics.arcade.collide(player, this.enemiesNonGravity);
+            physics.arcade.collide(player, enemies);
         }
         else {
             physics.arcade.collide(this.playerSpaceShip, this.layer02);
@@ -393,8 +392,9 @@ class MyGame {
             physics.arcade.collide(this.playerSpaceShip, enemies);
         }        
 
-        physics.arcade.collide(this.enemiesPhysics, this.layer02);
-        physics.arcade.collide(this.enemiesPhysics, this.enemiesPhysics);
+        var enemiesPhysics = enemies.filter(x => x.enemyType == "physics");
+        physics.arcade.collide(enemiesPhysics, this.layer02);
+        physics.arcade.collide(enemiesPhysics, enemiesPhysics);
     }
 
     playerEnteringSpaceshipCollisionHandler = (playerSpaceShip, player) => {
