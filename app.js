@@ -107,7 +107,7 @@ var MyGame = /** @class */ (function () {
             _this.playerHudIcon.fixedToCamera = true;
             _this.playerHudIcon.anchor.setTo(0, 0);
             //hudGroup.add(playerHudIcon);
-            _this.createWorld('level1', _this.game, _this.enemies);
+            _this.createWorld('level1', _this.game, _this.enemies, _this.enemiesPhysics);
             // input
             _this.cursors = _this.game.input.keyboard.createCursorKeys();
             _this.createAudio(_this.game);
@@ -119,7 +119,7 @@ var MyGame = /** @class */ (function () {
             _this.springSound = game.add.audio('springSound');
             _this.springSound.allowMultiple = false;
         };
-        this.createWorld = function (worldName, game, enemies) {
+        this.createWorld = function (worldName, game, enemies, enemiesPhysics) {
             // using the Tiled map editor, here is the order of the layers from back to front:
             // layer00-image (not currently used)
             // layer01-background-passable
@@ -172,8 +172,8 @@ var MyGame = /** @class */ (function () {
             _this.layer07 = _this.map.createLayer('layer07-enemies');
             _this.layer07.alpha = 0.1;
             enemies = game.add.group();
-            _this.enemiesPhysics = game.add.group(); // removed 324
-            _this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', _this.enemiesPhysics); //, this.enemyPhysics);
+            enemiesPhysics = game.add.group(); // removed 324
+            _this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics); //, this.enemyPhysics);
             var enemiesNonGravity = game.add.group();
             _this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity); //, this.enemyNonGravity);
             _this.layer07.resizeWorld();
@@ -188,14 +188,14 @@ var MyGame = /** @class */ (function () {
                 enemy.isFacingRight = true;
             }, _this);
             enemies.add(enemiesNonGravity);
-            game.physics.enable(_this.enemiesPhysics);
-            _this.enemiesPhysics.forEach(function (enemy) {
+            game.physics.enable(enemiesPhysics);
+            enemiesPhysics.forEach(function (enemy) {
                 enemy.enemyType = "physics";
                 enemy.enableBody = true;
                 enemy.body.collideWorldBounds = true;
                 enemy.isFacingRight = true;
             }, _this);
-            _this.enemies.add(_this.enemiesPhysics);
+            enemies.add(enemiesPhysics);
             //enemies.enableBody = true;F
             //enemies.body.collideWorldBounds = true;    
             //---------------------------------------------------------------------------------------------------
@@ -584,16 +584,16 @@ var MyGame = /** @class */ (function () {
             _this.game.camera.follow(player);
         };
         this.createSpaceShip = function (game) {
-            var playerSpaceShip = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
-            game.physics.enable(playerSpaceShip);
-            playerSpaceShip.body.collideWorldBounds = true;
-            playerSpaceShip.enableBody = true;
-            playerSpaceShip.body.allowGravity = false;
-            _this.createSpaceShipExhaustEmitter();
-            return playerSpaceShip;
+            var ship = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
+            game.physics.enable(ship);
+            ship.body.collideWorldBounds = true;
+            ship.enableBody = true;
+            ship.body.allowGravity = false;
+            _this.createSpaceShipExhaustEmitter(game, ship);
+            return ship;
         };
-        this.createSpaceShipExhaustEmitter = function () {
-            _this.emitter = _this.game.add.emitter(_this.playerSpaceShip.body.x, _this.playerSpaceShip.body.y, 200);
+        this.createSpaceShipExhaustEmitter = function (game, playerSpaceShip) {
+            _this.emitter = game.add.emitter(playerSpaceShip.body.x, playerSpaceShip.body.y, 200);
             _this.emitter.makeParticles('engineExhaust');
             _this.emitter.minRotation = 0;
             _this.emitter.maxRotation = 0;
@@ -603,8 +603,8 @@ var MyGame = /** @class */ (function () {
             _this.emitter.setYSpeed(100, 150);
             //emitter.bounce.setTo(0.5, 0.5);
             _this.emitter.setScale(0.1, 1, 0.25, 0.25, 1000, Phaser.Easing.Quintic.Out);
-            _this.emitter.x = _this.playerSpaceShip.x;
-            _this.emitter.y = _this.playerSpaceShip.y + 50;
+            _this.emitter.x = playerSpaceShip.x;
+            _this.emitter.y = playerSpaceShip.y + 50;
         };
         this.particleBurst = function () {
             _this.emitter.x = _this.playerSpaceShip.x;

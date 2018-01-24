@@ -154,7 +154,7 @@ class MyGame {
         
         //hudGroup.add(playerHudIcon);
 
-        this.createWorld('level1', this.game, this.enemies);
+        this.createWorld('level1', this.game, this.enemies, this.enemiesPhysics);
 
         // input
         this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -170,7 +170,7 @@ class MyGame {
         this.springSound.allowMultiple = false;
     }
     
-    createWorld = (worldName, game, enemies) => {
+    createWorld = (worldName, game, enemies, enemiesPhysics) => {
 
         // using the Tiled map editor, here is the order of the layers from back to front:
         
@@ -237,8 +237,8 @@ class MyGame {
         this.layer07.alpha = 0.1;
         enemies = game.add.group();
 
-        this.enemiesPhysics = game.add.group();  // removed 324
-        this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', this.enemiesPhysics);//, this.enemyPhysics);
+        enemiesPhysics = game.add.group();  // removed 324
+        this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics);//, this.enemyPhysics);
 
         var enemiesNonGravity = game.add.group();
         this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity);//, this.enemyNonGravity);
@@ -258,14 +258,14 @@ class MyGame {
         }, this);
         enemies.add(enemiesNonGravity);
 
-        game.physics.enable(this.enemiesPhysics);
-        this.enemiesPhysics.forEach(function (enemy) {
+        game.physics.enable(enemiesPhysics);
+        enemiesPhysics.forEach(function (enemy) {
             enemy.enemyType = "physics";
             enemy.enableBody = true;
             enemy.body.collideWorldBounds = true;
             enemy.isFacingRight = true;
         }, this);
-        this.enemies.add(this.enemiesPhysics);
+        enemies.add(enemiesPhysics);
         //enemies.enableBody = true;F
         //enemies.body.collideWorldBounds = true;    
 
@@ -765,19 +765,19 @@ class MyGame {
 
     createSpaceShip = (game) => {
 
-        var playerSpaceShip = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
-        game.physics.enable(playerSpaceShip);
-        playerSpaceShip.body.collideWorldBounds = true;
-        playerSpaceShip.enableBody = true;
-        playerSpaceShip.body.allowGravity = false;
+        var ship = game.add.sprite(400, 800, 'alienShipSprites', 'shipBeige.png');
+        game.physics.enable(ship);
+        ship.body.collideWorldBounds = true;
+        ship.enableBody = true;
+        ship.body.allowGravity = false;
 
-        this.createSpaceShipExhaustEmitter();
+        this.createSpaceShipExhaustEmitter(game, ship);
 
-        return playerSpaceShip;
+        return ship;
     }
 
-    createSpaceShipExhaustEmitter = () => {
-        this.emitter = this.game.add.emitter(this.playerSpaceShip.body.x, this.playerSpaceShip.body.y, 200);
+    createSpaceShipExhaustEmitter = (game, playerSpaceShip) => {
+        this.emitter = game.add.emitter(playerSpaceShip.body.x, playerSpaceShip.body.y, 200);
 
         this.emitter.makeParticles('engineExhaust');
         this.emitter.minRotation = 0;
@@ -789,8 +789,8 @@ class MyGame {
         //emitter.bounce.setTo(0.5, 0.5);
         this.emitter.setScale(0.1, 1, 0.25, 0.25, 1000, Phaser.Easing.Quintic.Out);
 
-        this.emitter.x = this.playerSpaceShip.x;
-        this.emitter.y = this.playerSpaceShip.y + 50;
+        this.emitter.x = playerSpaceShip.x;
+        this.emitter.y = playerSpaceShip.y + 50;
     }
 
     particleBurst = () => {
