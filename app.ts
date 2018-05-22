@@ -37,6 +37,8 @@ class MyGame {
     // player stuff
     player; // player instance
     playerSpaceShip;
+    playerIsInSpaceShip;
+    playerisCurrentlyTouchingSpring;
     
     playerGun;
     //playerGunBullet;
@@ -153,8 +155,11 @@ class MyGame {
         this.playerHudIcon.anchor.setTo(0, 0);
         
         //hudGroup.add(playerHudIcon);
+        this.enemies = this.game.add.group();
+        this.enemiesPhysics = this.game.add.group();  // removed 324
+        this.enemiesNonGravity = this.game.add.group();
 
-        this.createWorld('level1', this.game, this.enemies, this.enemiesPhysics);
+        this.createWorld('level1', this.game, this.enemies, this.enemiesPhysics, this.enemiesNonGravity);
 
         // input
         this.cursors = this.game.input.keyboard.createCursorKeys();
@@ -170,7 +175,7 @@ class MyGame {
         this.springSound.allowMultiple = false;
     }
     
-    createWorld = (worldName, game, enemies, enemiesPhysics) => {
+    createWorld = (worldName, game, enemies, enemiesPhysics, enemiesNonGravity) => {
 
         // using the Tiled map editor, here is the order of the layers from back to front:
         
@@ -228,19 +233,26 @@ class MyGame {
 
         this.playerSpaceShip = this.createSpaceShip(this.game);
 
-        this.createPlayer(this.player, this.playerGun);
+        this.player = this.createPlayer(this.player, this.playerGun);
+        this.playerIsInSpaceShip = false;
+        this.player.isFacingRight = false;
+        this.player.isCurrentlyTouchingSpring = false;
+
+        this.playerGun = this.game.add.sprite(64, 64, 'playerGun', 'playerGun');
+        this.playerGun.anchor.setTo(0.5, 0.5);
+
+        this.game.physics.enable(this.playerGun);
 
         //---------------------------------------------------------------------------------------------------
         // ENEMIES
         //---------------------------------------------------------------------------------------------------
         this.layer07 = this.map.createLayer('layer07-enemies');
         this.layer07.alpha = 0.1;
-        enemies = game.add.group();
+        
 
-        enemiesPhysics = game.add.group();  // removed 324
+        
         this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics);//, this.enemyPhysics);
 
-        var enemiesNonGravity = game.add.group();
         this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity);//, this.enemyNonGravity);
 
         this.layer07.resizeWorld();
@@ -361,8 +373,8 @@ class MyGame {
 
             this.emitTime++;
 
-            this.updatePhysics(this.player, this.enemies, this.game.physics);
-            this.updatePlayer(this.player, this.playerGun, this.playerSpaceShip, this.game.input.keyboard, this.cursors);
+            this.updatePhysics(this.player, this.enemies, this.game.physics, this.playerIsInSpaceShip, this.playerisCurrentlyTouchingSpring);
+            this.updatePlayer(this.player, this.playerGun, this.playerSpaceShip, this.game.input.keyboard, this.cursors, this.playerIsInSpaceShip);
             this.updateBullets(this.bullets);
             this.processInput(this.game.input);
 
@@ -372,13 +384,13 @@ class MyGame {
         }
     }
 
-    updatePhysics = (player, enemies, physics) => {
+    updatePhysics = (player, enemies, physics, playerIsInSpaceShip, isCurrentlyTouchingSpring) => {
         
-        if (!player.isInSpaceShip) {
+        if (!playerIsInSpaceShip) {
             physics.arcade.collide(player, this.layer02);
             physics.arcade.collide(player, this.layer05);
             if(!physics.arcade.collide(player, this.springs, this.playerTouchingSpringHandler, null, this)) {
-                player.isCurrentlyTouchingSpring = false;
+                isCurrentlyTouchingSpring = false;
             }
 
             physics.arcade.collide(this.playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
@@ -397,28 +409,28 @@ class MyGame {
         physics.arcade.collide(enemiesPhysics, enemiesPhysics);
     }
 
-    playerEnteringSpaceshipCollisionHandler = (playerSpaceShip, player) => {
+    playerEnteringSpaceshipCollisionHandler = (playerSpaceShip, player, playerIsInSpaceShip) => {
         if (player.renderable) {
             
-            player.isInSpaceShip = true;
+            playerIsInSpaceShip = true;
             //particleBurst();
             this.emitter.start(false, 1000, 100, 0);
         }
     }
 
-    playerTouchingSpringHandler = (player, springs) => {
+    playerTouchingSpringHandler = (player, springs, playerIsInSpaceShip, isCurrentlyTouchingSpring) => {
 
-        if (!player.isInSpaceShip && !player.isCurrentlyTouchingSpring) {
+        if (!playerIsInSpaceShip && !isCurrentlyTouchingSpring) {
             //if(springSound.)
             //if (tile.alpha > 0) {
             player.body.velocity.y = -650;
             this.springSound.play();
-            player.isCurrentlyTouchingSpring = true;
+            isCurrentlyTouchingSpring = true;
         }
     }
 
-    playerExitingSpaceship = (player, playerSpaceShip) => {
-        player.isInSpaceShip = false;
+    playerExitingSpaceship = (player, playerSpaceShip, playerIsInSpaceShip) => {
+        playerIsInSpaceShip = false;
         player.body.velocity.y = -400;
         player.body.x = playerSpaceShip.body.x +50;
         player.renderable = true;
@@ -429,9 +441,9 @@ class MyGame {
         this.emitter.on = false;
     }
 
-    updatePlayer = (player, playerGun, playerSpaceShip, keyboard, cursors) => {
+    updatePlayer = (player, playerGun, playerSpaceShip, keyboard, cursors, playerIsInSpaceShip) => {
 
-        if (!player.isInSpaceShip)
+        if (!playerIsInSpaceShip)
         {
             player.body.velocity.x = 0;
 
@@ -572,7 +584,7 @@ class MyGame {
 
             if (keyboard.isDown(Phaser.Keyboard.E)) {
 
-                this.playerExitingSpaceship(player, playerSpaceShip);
+                this.playerExitingSpaceship(player, playerSpaceShip, playerIsInSpaceShip);
 
                 //particleBurst();
             }
@@ -728,11 +740,12 @@ class MyGame {
         return false;
     }
 
-    createPlayer = (player, playerGun) =>  {
+    createPlayer = (game, playerGun) =>  {
 
-        player = this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
+        var player = this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
         player.scale.setTo(this.playerDrawScale, this.playerDrawScale);
         player.anchor.setTo(.5, .5);
+        //player.isInSpaceShip = false;
 
         for (var i = 0; i < this.playerPrefixes.length; i++) {
             player.animations.add(this.playerPrefixes[i] + 'walk', Phaser.Animation.generateFrameNames(this.playerPrefixes[i] + '_walk', 1, 2, '.png'), 10);
@@ -749,18 +762,12 @@ class MyGame {
 
         player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
 
-        player.isInSpaceShip = false;
-
-        player.isFacingRight = true;
+        //player.isFacingRight = true;
         
-        player.isCurrentlyTouchingSpring = false;
-
-        playerGun = this.game.add.sprite(64, 64, 'playerGun', 'playerGun');
-        playerGun.anchor.setTo(0.5, 0.5);
-
-        this.game.physics.enable(playerGun);
+        //player.isCurrentlyTouchingSpring = false;     
 
         this.game.camera.follow(player);
+        return player;
     }
 
     createSpaceShip = (game) => {

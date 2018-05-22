@@ -3,6 +3,6 @@
     "command": "tsc",
     "isShellCommand": "true",
     "showOutput": "silent",
-    "args": ["--outFile", "bin/app.js"],
+    "args": ["--out", "app.js"],
     "problemMatcher": "$tsc"
 }
