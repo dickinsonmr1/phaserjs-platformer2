@@ -37,6 +37,16 @@ var Constants = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Constants, "playerDrawScale", {
+        get: function () { return 0.5; },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Constants, "enemyDrawScale", {
+        get: function () { return 1; },
+        enumerable: true,
+        configurable: true
+    });
     return Constants;
 }());
 var PlayerBox = /** @class */ (function () {
@@ -66,13 +76,10 @@ var MyGame = /** @class */ (function () {
         this.bulletTime = 0;
         this.bulletDrawOffsetX = 6;
         this.bulletDrawOffsetY = 8;
-        //gems;
         // display stuff
-        this.playerDrawScale = 0.50;
-        this.enemyDrawScale = 1;
+        //playerDrawScale = 0.50;
+        //enemyDrawScale = 1;
         this.worldScale = 1;
-        // initialization stuff
-        this.isWorldLoaded = false;
         this.preload = function () {
             _this.loadAudio(_this.game);
             _this.loadSprites(_this.game);
@@ -121,8 +128,8 @@ var MyGame = /** @class */ (function () {
             _this.game.stage.backgroundColor = '#787878';
             var logo = _this.game.add.sprite(_this.game.world.centerX, _this.game.world.centerY, 'logo.png');
             logo.anchor.setTo(0.5, 0.5);
-            _this.sky = _this.game.add.tileSprite(0, 0, 20480, 1024, 'sky');
-            _this.sky.fixedtoCamera = true;
+            var sky = _this.game.add.tileSprite(0, 0, 20480, 1024, 'sky');
+            //sky.fixedToCamera = true;
             _this.hudGroup = _this.game.add.group();
             // http://www.html5gamedevs.com/topic/6380-moving-a-camera-fixed-sprite/
             _this.playerHudIcon = _this.game.add.image(0, 0, 'playerSprites', 'alienBlue_front.png');
@@ -132,7 +139,8 @@ var MyGame = /** @class */ (function () {
             _this.enemies = _this.game.add.group();
             _this.enemiesPhysics = _this.game.add.group(); // removed 324
             _this.enemiesNonGravity = _this.game.add.group();
-            _this.createWorld('level1', _this.game, _this.enemies, _this.enemiesPhysics, _this.enemiesNonGravity);
+            _this.world = _this.createWorld('level1', _this.game, _this.enemies, _this.enemiesPhysics, _this.enemiesNonGravity, sky);
+            _this.world.sky = sky;
             // input
             _this.cursors = _this.game.input.keyboard.createCursorKeys();
             _this.createAudio(_this.game);
@@ -144,7 +152,7 @@ var MyGame = /** @class */ (function () {
             _this.springSound = game.add.audio('springSound');
             _this.springSound.allowMultiple = false;
         };
-        this.createWorld = function (worldName, game, enemies, enemiesPhysics, enemiesNonGravity) {
+        this.createWorld = function (worldName, game, enemies, enemiesPhysics, enemiesNonGravity, sky) {
             // using the Tiled map editor, here is the order of the layers from back to front:
             // layer00-image (not currently used)
             // layer01-background-passable
@@ -157,13 +165,15 @@ var MyGame = /** @class */ (function () {
             // like water... one idea is to make this automatically move
             // layer06-gameobjects        
             // layer04-foreground-passable-opaque
-            _this.map = game.add.tilemap(worldName);
+            var world = new World();
+            world.sky = sky;
+            world.map = game.add.tilemap(worldName);
             //map.addTilesetImage('sky', 'backgroundImageLayer');
-            _this.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
-            _this.map.addTilesetImage('spritesheet_items_64x64', 'items');
-            _this.map.addTilesetImage('spritesheet_ground_64x64', 'ground');
-            _this.map.addTilesetImage('spritesheet_enemies_64x64', 'enemyTiles');
-            _this.map.addTilesetImage('platformer-requests-sheet_64x64', 'platformerRequestTiles');
+            world.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
+            world.map.addTilesetImage('spritesheet_items_64x64', 'items');
+            world.map.addTilesetImage('spritesheet_ground_64x64', 'ground');
+            world.map.addTilesetImage('spritesheet_enemies_64x64', 'enemyTiles');
+            world.map.addTilesetImage('platformer-requests-sheet_64x64', 'platformerRequestTiles');
             //map.setCollisionBetween(27, 29);
             //map.setCollision(40);
             ////  This will set Tile ID 26 (the coin) to call the hitCoin function  when collided with
@@ -174,17 +184,17 @@ var MyGame = /** @class */ (function () {
             //bgtile = this.map.createLayer('backgroundImageLayer');
             //bgtile.scrollFactorX = 1.15;
             // background layer
-            _this.layer01 = _this.map.createLayer('layer01-background-passable');
-            _this.layer01.alpha = 1.0;
-            _this.layer01.resizeWorld();
+            world.layer01 = world.map.createLayer('layer01-background-passable');
+            world.layer01.alpha = 1.0;
+            world.layer01.resizeWorld();
             // non-passable blocks layer
-            _this.layer02 = _this.map.createLayer('layer02-nonpassable');
-            _this.layer02.alpha = 1.0;
+            world.layer02 = world.map.createLayer('layer02-nonpassable');
+            world.layer02.alpha = 1.0;
             //map.setCollisionBetween(0, 133, true, layer02, true);
-            _this.map.setCollisionBetween(0, 2000, true, _this.layer02, true);
+            world.map.setCollisionBetween(0, 2000, true, world.layer02, true);
             //map.setCollisionBetween(158, 400, true, layer02, true);
-            _this.layer02.resizeWorld();
-            _this.layer02.debug = true;
+            world.layer02.resizeWorld();
+            world.layer02.debug = false;
             //map.setCollision();
             //  Un-comment this on to see the collision tiles
             //layer.debug = true;
@@ -200,11 +210,11 @@ var MyGame = /** @class */ (function () {
             //---------------------------------------------------------------------------------------------------
             // ENEMIES
             //---------------------------------------------------------------------------------------------------
-            _this.layer07 = _this.map.createLayer('layer07-enemies');
-            _this.layer07.alpha = 0.1;
-            _this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics); //, this.enemyPhysics);
-            _this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity); //, this.enemyNonGravity);
-            _this.layer07.resizeWorld();
+            world.layer07 = world.map.createLayer('layer07-enemies');
+            world.layer07.alpha = 0.1;
+            world.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics); //, this.enemyPhysics);
+            world.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity); //, this.enemyNonGravity);
+            world.layer07.resizeWorld();
             game.physics.enable(enemiesNonGravity);
             enemiesNonGravity.forEach(function (enemy) {
                 enemy.enemyType = "nonGravity";
@@ -229,33 +239,33 @@ var MyGame = /** @class */ (function () {
             //---------------------------------------------------------------------------------------------------
             // COLLECTIBLES
             //---------------------------------------------------------------------------------------------------
-            _this.layer05 = _this.map.createLayer('layer05-collectibles');
-            _this.layer05.alpha = 1.0; //0.75;
+            world.layer05 = world.map.createLayer('layer05-collectibles');
+            world.layer05.alpha = 1.0; //0.75;
             //map.setCollisionBetween(0, 400, true, layer05, true);
             // gem stuff... http://phaser.io/examples/v2/tilemaps/tile-callbacks
-            _this.map.setCollision(Constants.tileKeyGemRed, true, _this.layer05, true);
-            _this.map.setCollision(Constants.tileKeyGemGreen, true, _this.layer05, true);
-            _this.map.setCollision(Constants.tileKeyGemYellow, true, _this.layer05, true);
-            _this.map.setCollision(Constants.tileKeyGemBlue, true, _this.layer05, true);
-            _this.map.setTileIndexCallback(Constants.tileKeyGemRed, _this.collectGem, _this, _this.layer05);
-            _this.map.setTileIndexCallback(Constants.tileKeyGemGreen, _this.collectGem, _this, _this.layer05);
-            _this.map.setTileIndexCallback(Constants.tileKeyGemYellow, _this.collectGem, _this, _this.layer05);
-            _this.map.setTileIndexCallback(Constants.tileKeyGemBlue, _this.collectGem, _this, _this.layer05);
+            world.map.setCollision(Constants.tileKeyGemRed, true, world.layer05, true);
+            world.map.setCollision(Constants.tileKeyGemGreen, true, world.layer05, true);
+            world.map.setCollision(Constants.tileKeyGemYellow, true, world.layer05, true);
+            world.map.setCollision(Constants.tileKeyGemBlue, true, world.layer05, true);
+            world.map.setTileIndexCallback(Constants.tileKeyGemRed, _this.collectGem, _this, world.layer05);
+            world.map.setTileIndexCallback(Constants.tileKeyGemGreen, _this.collectGem, _this, world.layer05);
+            world.map.setTileIndexCallback(Constants.tileKeyGemYellow, _this.collectGem, _this, world.layer05);
+            world.map.setTileIndexCallback(Constants.tileKeyGemBlue, _this.collectGem, _this, world.layer05);
             // key
-            _this.map.setCollision(Constants.tileKeyBlueKey, true, _this.layer05, true);
-            _this.map.setTileIndexCallback(Constants.tileKeyBlueKey, _this.collectKey, _this, _this.layer05);
+            world.map.setCollision(Constants.tileKeyBlueKey, true, world.layer05, true);
+            world.map.setTileIndexCallback(Constants.tileKeyBlueKey, _this.collectKey, _this, world.layer05);
             // green flag no wind: 146
-            _this.layer05.resizeWorld();
+            world.layer05.resizeWorld();
             //---------------------------------------------------------------------------------------------------
             // GAMEOBJECTS
             //---------------------------------------------------------------------------------------------------
-            _this.layer06 = _this.map.createLayer('layer06-gameobjects');
-            _this.layer06.alpha = 0.0; //0.75;
+            world.layer06 = world.map.createLayer('layer06-gameobjects');
+            world.layer06.alpha = 0.0; //0.75;
             //map.setCollisionBetween(0, 400, true, layer05, true);
             _this.springs = game.add.group();
-            _this.map.setCollision(Constants.tileKeySpring, true, _this.layer06, true);
-            _this.map.createFromTiles(Constants.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', _this.springs); //, this.spring);
-            _this.layer06.resizeWorld();
+            world.map.setCollision(Constants.tileKeySpring, true, world.layer06, true);
+            world.map.createFromTiles(Constants.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', _this.springs); //, this.spring);
+            world.layer06.resizeWorld();
             game.physics.enable(_this.springs);
             _this.springs.forEach(function (item) {
                 item.enableBody = true;
@@ -269,15 +279,15 @@ var MyGame = /** @class */ (function () {
             //---------------------------------------------------------------------------------------------------
             // foreground semi-transparent layer (water, lava, clouds, etc.)
             //---------------------------------------------------------------------------------------------------
-            _this.layer03 = _this.map.createLayer('layer03-foreground-passable-semitransparent');
-            _this.layer03.alpha = 0.5;
-            _this.layer03.resizeWorld();
+            world.layer03 = world.map.createLayer('layer03-foreground-passable-semitransparent');
+            world.layer03.alpha = 0.5;
+            world.layer03.resizeWorld();
             //---------------------------------------------------------------------------------------------------
             // FOREGROUND PASSABLE OPAQUE LAYER (front wall of a cave, plant, etc.)
             //---------------------------------------------------------------------------------------------------
-            _this.layer04 = _this.map.createLayer('layer04-foreground-passable-opaque');
-            _this.layer04.alpha = 1.0;
-            _this.layer04.resizeWorld();
+            world.layer04 = world.map.createLayer('layer04-foreground-passable-opaque');
+            world.layer04.alpha = 1.0;
+            world.layer04.resizeWorld();
             // TODO: add HUD stuff here
             _this.bullets = game.add.group();
             game.physics.enable(_this.bullets);
@@ -293,14 +303,15 @@ var MyGame = /** @class */ (function () {
                 b.body.collideWorldBounds = true;
                 b.events.onOutOfBounds.add(_this.resetBullet, _this);
             }
-            _this.isWorldLoaded = true;
+            world.isWorldLoaded = true;
+            return world;
         };
         this.update = function () {
-            if (_this.isWorldLoaded) {
-                _this.sky.tilePosition.x = -(_this.game.camera.x * 0.25);
-                _this.sky.tilePosition.y = -(_this.game.camera.y * 0.05) + 250;
+            if (_this.world.isWorldLoaded) {
+                _this.world.sky.tilePosition.x = -(_this.game.camera.x * 0.25);
+                _this.world.sky.tilePosition.y = -(_this.game.camera.y * 0.05) + 300;
                 _this.emitTime++;
-                _this.updatePhysics(_this.game.physics, _this.player, _this.playerBox, _this.enemiesNonGravity, _this.enemiesPhysics, _this.layer02);
+                _this.updatePhysics(_this.world, _this.game.physics, _this.player, _this.playerBox, _this.enemiesNonGravity, _this.enemiesPhysics, _this.world.layer02);
                 _this.updatePlayer(_this.player, _this.playerGun, _this.playerBox, _this.playerSpaceShip, _this.game.input.keyboard, _this.cursors);
                 _this.updateBullets(_this.bullets);
                 _this.processInput(_this.game.input);
@@ -308,10 +319,10 @@ var MyGame = /** @class */ (function () {
                 _this.updateHud(_this.playerHudIcon);
             }
         };
-        this.updatePhysics = function (physics, player, playerBox, enemiesNonGravity, enemiesPhysics, impassableLayer) {
+        this.updatePhysics = function (world, physics, player, playerBox, enemiesNonGravity, enemiesPhysics, impassableLayer) {
             if (!playerBox.isInSpaceShip) {
-                physics.arcade.collide(player, _this.layer02);
-                physics.arcade.collide(player, _this.layer05);
+                physics.arcade.collide(player, world.layer02);
+                physics.arcade.collide(player, world.layer05);
                 if (!physics.arcade.collide(player, _this.springs, _this.playerTouchingSpringHandler, null, _this)) {
                     playerBox.isCurrentlyTouchingSpring = false;
                 }
@@ -321,7 +332,7 @@ var MyGame = /** @class */ (function () {
             }
             else {
                 physics.arcade.collide(_this.playerSpaceShip, impassableLayer);
-                physics.arcade.collide(_this.playerSpaceShip, _this.layer05);
+                physics.arcade.collide(_this.playerSpaceShip, world.layer05);
                 //physics.arcade.collide(this.playerSpaceShip, enemies);
                 physics.arcade.collide(player, enemiesNonGravity);
                 physics.arcade.collide(player, enemiesPhysics);
@@ -375,8 +386,8 @@ var MyGame = /** @class */ (function () {
                     //player.body.velocity.x = -150;
                     player.body.velocity.x = -200;
                     player.anchor.setTo(.5, .5);
-                    player.scale.x = -_this.playerDrawScale;
-                    player.scale.y = _this.playerDrawScale;
+                    player.scale.x = -Constants.playerDrawScale;
+                    player.scale.y = Constants.playerDrawScale;
                     player.animations.play(_this.playerPrefixes[_this.selectedPlayerIndex] + 'walk');
                     playerGun.scale.x = -0.8;
                     playerGun.scale.y = 0.8;
@@ -389,8 +400,8 @@ var MyGame = /** @class */ (function () {
                     //player.body.velocity.x = 150;
                     player.body.velocity.x = 200;
                     player.anchor.setTo(.5, .5);
-                    player.scale.x = _this.playerDrawScale;
-                    player.scale.y = _this.playerDrawScale;
+                    player.scale.x = Constants.playerDrawScale;
+                    player.scale.y = Constants.playerDrawScale;
                     player.animations.play(_this.playerPrefixes[_this.selectedPlayerIndex] + 'walk');
                     playerGun.scale.x = 0.8;
                     playerGun.scale.y = 0.8;
@@ -509,18 +520,20 @@ var MyGame = /** @class */ (function () {
             if (input.keyboard.isDown(Phaser.Keyboard.FOUR)) {
                 _this.selectedPlayerIndex = 4;
             }
+            /*
             if (input.keyboard.isDown(Phaser.Keyboard.OPEN_BRACKET)) {
-                _this.layer02.debug = false;
-                _this.player.debug = false;
-                _this.enemiesNonGravity.debug = false;
-                _this.enemiesPhysics.debug = false;
+                this.layer02.debug = false;
+                this.player.debug = false;
+                this.enemiesNonGravity.debug = false;
+                this.enemiesPhysics.debug = false;
             }
             if (input.keyboard.isDown(Phaser.Keyboard.CLOSED_BRACKET)) {
-                _this.layer02.debug = true;
-                _this.player.debug = true;
-                _this.enemiesNonGravity.debug = true;
-                _this.enemiesPhysics.debug = true;
+                this.layer02.debug = true;
+                this.player.debug = true;
+                this.enemiesNonGravity.debug = true;
+                this.enemiesPhysics.debug = true;
             }
+            */
             // zoom
             if (input.keyboard.isDown(Phaser.Keyboard.Q)) {
                 _this.worldScale += 0.05;
@@ -545,14 +558,14 @@ var MyGame = /** @class */ (function () {
                     enemy.isFacingRight = true;
                 }
                 if (enemy.isFacingRight) {
-                    enemy.scale.x = -this.enemyDrawScale;
+                    enemy.scale.x = -Constants.enemyDrawScale;
                     enemy.anchor.setTo(.5, .5);
                     enemy.body.velocity.x = Constants.enemySpeed;
                 }
                 if (!enemy.isFacingRight) {
                     enemy.body.velocity.x = -Constants.enemySpeed;
                     enemy.anchor.setTo(.5, .5);
-                    enemy.scale.x = this.enemyDrawScale;
+                    enemy.scale.x = Constants.enemyDrawScale;
                 }
             }, _this);
             _this.enemiesNonGravity.forEach(function (enemy) {
@@ -562,11 +575,11 @@ var MyGame = /** @class */ (function () {
                     enemy.body.velocity.y *= -1;
                     if (enemy.body.velocity.y > 0) {
                         enemy.anchor.setTo(.5, .5);
-                        enemy.scale.y = -this.enemyDrawScale;
+                        enemy.scale.y = -Constants.enemyDrawScale;
                     }
                     else {
                         enemy.anchor.setTo(.5, .5);
-                        enemy.scale.y = this.enemyDrawScale;
+                        enemy.scale.y = Constants.enemyDrawScale;
                     }
                 }
                 //enemy.y += enemy.body.velocity;
@@ -588,9 +601,9 @@ var MyGame = /** @class */ (function () {
                 tile.collideDown = false;
                 tile.collideLeft = false;
                 tile.collideRight = false;
-                _this.layer05.dirty = true;
-                _this.map.dirty = true;
-                _this.map.setLayer(_this.layer05);
+                //this.world.layer05.dirty = true;
+                //this.world.map.dirty = true;
+                _this.world.map.setLayer(_this.world.layer05);
             }
             return false;
         };
@@ -603,15 +616,15 @@ var MyGame = /** @class */ (function () {
                 tile.collideDown = false;
                 tile.collideLeft = false;
                 tile.collideRight = false;
-                _this.layer05.dirty = true;
-                _this.map.dirty = true;
-                _this.map.setLayer(_this.layer05);
+                //this.world.layer05.dirty = true;
+                //this.world.map.dirty = true;
+                _this.world.map.setLayer(_this.world.layer05);
             }
             return false;
         };
         this.createPlayer = function (game, playerGun) {
             var player = _this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
-            player.scale.setTo(_this.playerDrawScale, _this.playerDrawScale);
+            player.scale.setTo(Constants.playerDrawScale, Constants.playerDrawScale);
             player.anchor.setTo(.5, .5);
             //player.isInSpaceShip = false;
             for (var i = 0; i < _this.playerPrefixes.length; i++) {

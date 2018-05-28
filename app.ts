@@ -8,6 +8,8 @@ class Constants {
     public static get tileKeyGemBlue(): number { return 149; }
     public static get tileKeySpring(): number { return 266; }
     public static get enemySpeed(): number {return 200;}
+    public static get playerDrawScale(): number {return 0.5;}
+    public static get enemyDrawScale(): number {return 1;}
 }
 
 class PlayerBox {
@@ -38,6 +40,7 @@ class World {
     layer06: Phaser.TilemapLayer;
     layer07: Phaser.TilemapLayer;
     isWorldLoaded: boolean;
+    sky: Phaser.TileSprite;
 }
 
 class MyGame {
@@ -48,21 +51,8 @@ class MyGame {
     
     game: Phaser.Game;
     
-
     world: World;
 
-    // map stuff
-    map;
-    //tileset;
-    layer01;
-    layer02;
-    layer03;
-    layer04;
-    layer05;
-    layer06;
-    layer07;
-    sky;
-        
     // player selection
     playerPrefixes = ['alienBeige', 'alienBlue', 'alienGreen', 'alienPink', 'alienYellow'];
     selectedPlayerIndex = 0;
@@ -93,13 +83,11 @@ class MyGame {
     enemiesNonGravity;
 
     // world stuff
-    //spring;
     springs;    
-    //gems;
 
     // display stuff
-    playerDrawScale = 0.50;
-    enemyDrawScale = 1;
+    //playerDrawScale = 0.50;
+    //enemyDrawScale = 1;
     worldScale = 1;
     
     //enemySpeed = 200;
@@ -109,7 +97,7 @@ class MyGame {
     emitTime;
 
     // initialization stuff
-    isWorldLoaded = false;
+    //isWorldLoaded = false;
 
     // HUD
     hudGroup;
@@ -179,8 +167,8 @@ class MyGame {
         var logo = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'logo.png');
         logo.anchor.setTo(0.5, 0.5);
 
-        this.sky = this.game.add.tileSprite(0, 0, 20480, 1024, 'sky');
-        this.sky.fixedtoCamera = true;
+        var sky = this.game.add.tileSprite(0, 0, 20480, 1024, 'sky');
+        //sky.fixedToCamera = true;
 
         this.hudGroup = this.game.add.group();
 
@@ -194,8 +182,9 @@ class MyGame {
         this.enemiesPhysics = this.game.add.group();  // removed 324
         this.enemiesNonGravity = this.game.add.group();
 
-        this.createWorld('level1', this.game, this.enemies, this.enemiesPhysics, this.enemiesNonGravity);
-
+        this.world = this.createWorld('level1', this.game, this.enemies, this.enemiesPhysics, this.enemiesNonGravity, sky);
+        this.world.sky = sky;
+        
         // input
         this.cursors = this.game.input.keyboard.createCursorKeys();
 
@@ -210,7 +199,7 @@ class MyGame {
         this.springSound.allowMultiple = false;
     }
     
-    createWorld = (worldName, game, enemies, enemiesPhysics, enemiesNonGravity) => {
+    createWorld = (worldName, game, enemies, enemiesPhysics, enemiesNonGravity, sky) => {
 
         // using the Tiled map editor, here is the order of the layers from back to front:
         
@@ -226,13 +215,17 @@ class MyGame {
         // layer06-gameobjects        
         // layer04-foreground-passable-opaque
         
-        this.map = game.add.tilemap(worldName);
+        var world = new World();
+
+        world.sky = sky;
+
+        world.map = game.add.tilemap(worldName);
         //map.addTilesetImage('sky', 'backgroundImageLayer');
-        this.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
-        this.map.addTilesetImage('spritesheet_items_64x64', 'items');
-        this.map.addTilesetImage('spritesheet_ground_64x64', 'ground');
-        this.map.addTilesetImage('spritesheet_enemies_64x64', 'enemyTiles');
-        this.map.addTilesetImage('platformer-requests-sheet_64x64', 'platformerRequestTiles');
+        world.map.addTilesetImage('spritesheet_tiles_64x64', 'tiles');
+        world.map.addTilesetImage('spritesheet_items_64x64', 'items');
+        world.map.addTilesetImage('spritesheet_ground_64x64', 'ground');
+        world.map.addTilesetImage('spritesheet_enemies_64x64', 'enemyTiles');
+        world.map.addTilesetImage('platformer-requests-sheet_64x64', 'platformerRequestTiles');
 
         //map.setCollisionBetween(27, 29);
         //map.setCollision(40);
@@ -246,19 +239,19 @@ class MyGame {
         //bgtile.scrollFactorX = 1.15;
 
         // background layer
-        this.layer01 = this.map.createLayer('layer01-background-passable');
-        this.layer01.alpha = 1.0;
-        this.layer01.resizeWorld();
+        world.layer01 = world.map.createLayer('layer01-background-passable');
+        world.layer01.alpha = 1.0;
+        world.layer01.resizeWorld();
 
         // non-passable blocks layer
-        this.layer02 = this.map.createLayer('layer02-nonpassable');
-        this.layer02.alpha = 1.0;
+        world.layer02 = world.map.createLayer('layer02-nonpassable');
+        world.layer02.alpha = 1.0;
         //map.setCollisionBetween(0, 133, true, layer02, true);
-        this.map.setCollisionBetween(0, 2000, true, this.layer02, true);
+        world.map.setCollisionBetween(0, 2000, true, world.layer02, true);
         //map.setCollisionBetween(158, 400, true, layer02, true);
 
-        this.layer02.resizeWorld();
-        this.layer02.debug = true;
+        world.layer02.resizeWorld();
+        world.layer02.debug = false;
         //map.setCollision();
 
         //  Un-comment this on to see the collision tiles
@@ -281,14 +274,14 @@ class MyGame {
         //---------------------------------------------------------------------------------------------------
         // ENEMIES
         //---------------------------------------------------------------------------------------------------
-        this.layer07 = this.map.createLayer('layer07-enemies');
-        this.layer07.alpha = 0.1;
+        world.layer07 = world.map.createLayer('layer07-enemies');
+        world.layer07.alpha = 0.1;
                 
-        this.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics);//, this.enemyPhysics);
+        world.map.createFromTiles([297, 290, 322, 300, 380, 337, 395, 299, 323, 330, 353, 347, 371], null, 'ghost', 'layer07-enemies', enemiesPhysics);//, this.enemyPhysics);
 
-        this.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity);//, this.enemyNonGravity);
+        world.map.createFromTiles([324], null, 'piranha', 'layer07-enemies', enemiesNonGravity);//, this.enemyNonGravity);
 
-        this.layer07.resizeWorld();
+        world.layer07.resizeWorld();
 
         game.physics.enable(enemiesNonGravity);
         enemiesNonGravity.forEach(function (enemy) {
@@ -317,40 +310,40 @@ class MyGame {
         //---------------------------------------------------------------------------------------------------
         // COLLECTIBLES
         //---------------------------------------------------------------------------------------------------
-        this.layer05 = this.map.createLayer('layer05-collectibles');
-        this.layer05.alpha = 1.0;//0.75;
+        world.layer05 = world.map.createLayer('layer05-collectibles');
+        world.layer05.alpha = 1.0;//0.75;
         //map.setCollisionBetween(0, 400, true, layer05, true);
 
         // gem stuff... http://phaser.io/examples/v2/tilemaps/tile-callbacks
-        this.map.setCollision(Constants.tileKeyGemRed, true, this.layer05, true);
-        this.map.setCollision(Constants.tileKeyGemGreen, true, this.layer05, true);
-        this.map.setCollision(Constants.tileKeyGemYellow, true, this.layer05, true);
-        this.map.setCollision(Constants.tileKeyGemBlue, true, this.layer05, true);
+        world.map.setCollision(Constants.tileKeyGemRed, true, world.layer05, true);
+        world.map.setCollision(Constants.tileKeyGemGreen, true, world.layer05, true);
+        world.map.setCollision(Constants.tileKeyGemYellow, true, world.layer05, true);
+        world.map.setCollision(Constants.tileKeyGemBlue, true, world.layer05, true);
 
-        this.map.setTileIndexCallback(Constants.tileKeyGemRed, this.collectGem, this, this.layer05);
-        this.map.setTileIndexCallback(Constants.tileKeyGemGreen, this.collectGem, this, this.layer05);
-        this.map.setTileIndexCallback(Constants.tileKeyGemYellow, this.collectGem, this, this.layer05);
-        this.map.setTileIndexCallback(Constants.tileKeyGemBlue, this.collectGem, this, this.layer05);
+        world.map.setTileIndexCallback(Constants.tileKeyGemRed, this.collectGem, this, world.layer05);
+        world.map.setTileIndexCallback(Constants.tileKeyGemGreen, this.collectGem, this, world.layer05);
+        world.map.setTileIndexCallback(Constants.tileKeyGemYellow, this.collectGem, this, world.layer05);
+        world.map.setTileIndexCallback(Constants.tileKeyGemBlue, this.collectGem, this, world.layer05);
 
         // key
-        this.map.setCollision(Constants.tileKeyBlueKey, true, this.layer05, true);
-        this.map.setTileIndexCallback(Constants.tileKeyBlueKey, this.collectKey, this, this.layer05);
+        world.map.setCollision(Constants.tileKeyBlueKey, true, world.layer05, true);
+        world.map.setTileIndexCallback(Constants.tileKeyBlueKey, this.collectKey, this, world.layer05);
 
         // green flag no wind: 146
-        this.layer05.resizeWorld();
+        world.layer05.resizeWorld();
 
         //---------------------------------------------------------------------------------------------------
         // GAMEOBJECTS
         //---------------------------------------------------------------------------------------------------
-        this.layer06 = this.map.createLayer('layer06-gameobjects');
-        this.layer06.alpha = 0.0;//0.75;
+        world.layer06 = world.map.createLayer('layer06-gameobjects');
+        world.layer06.alpha = 0.0;//0.75;
         //map.setCollisionBetween(0, 400, true, layer05, true);
 
         this.springs = game.add.group();        
-        this.map.setCollision(Constants.tileKeySpring, true, this.layer06, true);
+        world.map.setCollision(Constants.tileKeySpring, true, world.layer06, true);
 
-        this.map.createFromTiles(Constants.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', this.springs);//, this.spring);
-        this.layer06.resizeWorld();
+        world.map.createFromTiles(Constants.tileKeySpring, null, 'tileObjectSprites', 'layer06-gameobjects', this.springs);//, this.spring);
+        world.layer06.resizeWorld();
 
         game.physics.enable(this.springs);
         this.springs.forEach(function (item) {        
@@ -367,16 +360,16 @@ class MyGame {
         //---------------------------------------------------------------------------------------------------
         // foreground semi-transparent layer (water, lava, clouds, etc.)
         //---------------------------------------------------------------------------------------------------
-        this.layer03 = this.map.createLayer('layer03-foreground-passable-semitransparent');
-        this.layer03.alpha = 0.5;
-        this.layer03.resizeWorld();
+        world.layer03 = world.map.createLayer('layer03-foreground-passable-semitransparent');
+        world.layer03.alpha = 0.5;
+        world.layer03.resizeWorld();
 
         //---------------------------------------------------------------------------------------------------
         // FOREGROUND PASSABLE OPAQUE LAYER (front wall of a cave, plant, etc.)
         //---------------------------------------------------------------------------------------------------
-        this.layer04 = this.map.createLayer('layer04-foreground-passable-opaque');
-        this.layer04.alpha = 1.0;
-        this.layer04.resizeWorld();
+        world.layer04 = world.map.createLayer('layer04-foreground-passable-opaque');
+        world.layer04.alpha = 1.0;
+        world.layer04.resizeWorld();
 
         // TODO: add HUD stuff here
 
@@ -395,18 +388,20 @@ class MyGame {
             b.body.collideWorldBounds = true;
             b.events.onOutOfBounds.add(this.resetBullet, this);
         }
-        this.isWorldLoaded = true;
+        world.isWorldLoaded = true;
+
+        return world;
     }
 
     update = () =>  {
-        if (this.isWorldLoaded)
+        if (this.world.isWorldLoaded)
         {
-            this.sky.tilePosition.x = -(this.game.camera.x * 0.25);
-            this.sky.tilePosition.y = -(this.game.camera.y * 0.05) + 250;
+            this.world.sky.tilePosition.x = -(this.game.camera.x * 0.25);
+            this.world.sky.tilePosition.y = -(this.game.camera.y * 0.05) + 300;
 
             this.emitTime++;
 
-            this.updatePhysics(this.game.physics, this.player, this.playerBox, this.enemiesNonGravity, this.enemiesPhysics,  this.layer02);
+            this.updatePhysics(this.world, this.game.physics, this.player, this.playerBox, this.enemiesNonGravity, this.enemiesPhysics, this.world.layer02);
             this.updatePlayer(this.player, this.playerGun, this.playerBox, this.playerSpaceShip, this.game.input.keyboard, this.cursors);
             this.updateBullets(this.bullets);
             this.processInput(this.game.input);
@@ -417,11 +412,11 @@ class MyGame {
         }
     }
 
-    updatePhysics = (physics, player, playerBox, enemiesNonGravity, enemiesPhysics, impassableLayer) => {
+    updatePhysics = (world, physics, player, playerBox, enemiesNonGravity, enemiesPhysics, impassableLayer) => {
         
         if (!playerBox.isInSpaceShip) {
-            physics.arcade.collide(player, this.layer02);
-            physics.arcade.collide(player, this.layer05);
+            physics.arcade.collide(player, world.layer02);
+            physics.arcade.collide(player, world.layer05);
             if(!physics.arcade.collide(player, this.springs, this.playerTouchingSpringHandler, null, this)) {
                 playerBox.isCurrentlyTouchingSpring = false;
             }
@@ -433,7 +428,7 @@ class MyGame {
         }
         else {
             physics.arcade.collide(this.playerSpaceShip, impassableLayer);
-            physics.arcade.collide(this.playerSpaceShip, this.layer05);
+            physics.arcade.collide(this.playerSpaceShip, world.layer05);
 
             //physics.arcade.collide(this.playerSpaceShip, enemies);
             physics.arcade.collide(player, enemiesNonGravity);
@@ -504,8 +499,8 @@ class MyGame {
                 //player.body.velocity.x = -150;
                 player.body.velocity.x = -200;
                 player.anchor.setTo(.5, .5);
-                player.scale.x = -this.playerDrawScale;
-                player.scale.y = this.playerDrawScale
+                player.scale.x = -Constants.playerDrawScale;
+                player.scale.y = Constants.playerDrawScale
                 player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
 
                 playerGun.scale.x = -0.8;
@@ -522,8 +517,8 @@ class MyGame {
                 //player.body.velocity.x = 150;
                 player.body.velocity.x = 200;
                 player.anchor.setTo(.5, .5);
-                player.scale.x = this.playerDrawScale;
-                player.scale.y = this.playerDrawScale;
+                player.scale.x = Constants.playerDrawScale;
+                player.scale.y = Constants.playerDrawScale;
                 player.animations.play(this.playerPrefixes[this.selectedPlayerIndex] + 'walk');
 
                 playerGun.scale.x = 0.8;
@@ -670,6 +665,7 @@ class MyGame {
         if (input.keyboard.isDown(Phaser.Keyboard.FOUR)) {
             this.selectedPlayerIndex = 4;
         }
+        /*
         if (input.keyboard.isDown(Phaser.Keyboard.OPEN_BRACKET)) {
             this.layer02.debug = false;
             this.player.debug = false;
@@ -682,6 +678,7 @@ class MyGame {
             this.enemiesNonGravity.debug = true;
             this.enemiesPhysics.debug = true;
         }
+        */
 
         // zoom
         if (input.keyboard.isDown(Phaser.Keyboard.Q)) {
@@ -715,7 +712,7 @@ class MyGame {
 
             if (enemy.isFacingRight) {
 
-                enemy.scale.x = -this.enemyDrawScale;
+                enemy.scale.x = -Constants.enemyDrawScale;
                 enemy.anchor.setTo(.5, .5);
                 enemy.body.velocity.x = Constants.enemySpeed;
             }
@@ -723,7 +720,7 @@ class MyGame {
 
                 enemy.body.velocity.x = -Constants.enemySpeed;
                 enemy.anchor.setTo(.5, .5);
-                enemy.scale.x = this.enemyDrawScale;
+                enemy.scale.x = Constants.enemyDrawScale;
             }        
         }, this);
 
@@ -735,12 +732,12 @@ class MyGame {
                 if(enemy.body.velocity.y > 0)
                 {
                     enemy.anchor.setTo(.5, .5);
-                    enemy.scale.y = -this.enemyDrawScale;
+                    enemy.scale.y = -Constants.enemyDrawScale;
                 }
                 else
                 {
                     enemy.anchor.setTo(.5, .5);
-                    enemy.scale.y = this.enemyDrawScale;
+                    enemy.scale.y = Constants.enemyDrawScale;
                 }
             }
             //enemy.y += enemy.body.velocity;
@@ -768,9 +765,9 @@ class MyGame {
             tile.collideDown = false;
             tile.collideLeft = false;
             tile.collideRight = false;
-            this.layer05.dirty = true;
-            this.map.dirty = true;
-            this.map.setLayer(this.layer05);
+            //this.world.layer05.dirty = true;
+            //this.world.map.dirty = true;
+            this.world.map.setLayer(this.world.layer05);
         }
         return false;
     }
@@ -787,9 +784,9 @@ class MyGame {
             tile.collideDown = false;
             tile.collideLeft = false;
             tile.collideRight = false;
-            this.layer05.dirty = true;
-            this.map.dirty = true;
-            this.map.setLayer(this.layer05);
+            //this.world.layer05.dirty = true;
+            //this.world.map.dirty = true;
+            this.world.map.setLayer(this.world.layer05);
         }
         return false;
     }
@@ -797,7 +794,7 @@ class MyGame {
     createPlayer = (game, playerGun) =>  {
 
         var player = this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
-        player.scale.setTo(this.playerDrawScale, this.playerDrawScale);
+        player.scale.setTo(Constants.playerDrawScale, Constants.playerDrawScale);
         player.anchor.setTo(.5, .5);
         //player.isInSpaceShip = false;
 
