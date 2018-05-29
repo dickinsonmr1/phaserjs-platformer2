@@ -51,6 +51,9 @@ var Constants = /** @class */ (function () {
 }());
 var PlayerBox = /** @class */ (function () {
     function PlayerBox(isInSpaceShip, isTouchingSpring, isFacingRight) {
+        this.bulletTime = 0;
+        this.bulletDrawOffsetX = 6;
+        this.bulletDrawOffsetY = 8;
         this.isInSpaceShip = isInSpaceShip;
         this.isTouchingSpring = isTouchingSpring;
         this.isFacingRight = isFacingRight;
@@ -73,12 +76,7 @@ var MyGame = /** @class */ (function () {
         // player selection
         this.playerPrefixes = ['alienBeige', 'alienBlue', 'alienGreen', 'alienPink', 'alienYellow'];
         this.selectedPlayerIndex = 0;
-        this.bulletTime = 0;
-        this.bulletDrawOffsetX = 6;
-        this.bulletDrawOffsetY = 8;
         // display stuff
-        //playerDrawScale = 0.50;
-        //enemyDrawScale = 1;
         this.worldScale = 1;
         this.preload = function () {
             _this.loadAudio(_this.game);
@@ -201,12 +199,12 @@ var MyGame = /** @class */ (function () {
             //layer2.debug = true;
             // add player between background and foreground layers
             _this.playerSpaceShip = _this.createSpaceShip(game);
-            _this.player = _this.createPlayer(_this.player, _this.playerGun);
+            _this.player = _this.createPlayer(_this.player);
             //this.playerIsInSpaceShip = false;
             _this.playerBox = new PlayerBox(false, false, true);
-            _this.playerGun = game.add.sprite(64, 64, 'playerGun', 'playerGun');
-            _this.playerGun.anchor.setTo(0.5, 0.5);
-            game.physics.enable(_this.playerGun);
+            _this.playerBox.playerGun = game.add.sprite(64, 64, 'playerGun', 'playerGun');
+            _this.playerBox.playerGun.anchor.setTo(0.5, 0.5);
+            game.physics.enable(_this.playerBox.playerGun);
             //---------------------------------------------------------------------------------------------------
             // ENEMIES
             //---------------------------------------------------------------------------------------------------
@@ -289,12 +287,12 @@ var MyGame = /** @class */ (function () {
             world.layer04.alpha = 1.0;
             world.layer04.resizeWorld();
             // TODO: add HUD stuff here
-            _this.bullets = game.add.group();
-            game.physics.enable(_this.bullets);
-            _this.bullets.enableBody = true;
-            _this.bullets.allowGravity = false;
+            _this.playerBox.bullets = game.add.group();
+            game.physics.enable(_this.playerBox.bullets);
+            _this.playerBox.bullets.enableBody = true;
+            //this.playerBox.bullets.allowGravity = false;
             for (var i = 0; i < 200; i++) {
-                var b = _this.bullets.create(0, 0, 'playerGunBullet');
+                var b = _this.playerBox.bullets.create(0, 0, 'playerGunBullet');
                 b.name = 'bullet' + i;
                 b.exists = false;
                 b.visible = false;
@@ -312,8 +310,8 @@ var MyGame = /** @class */ (function () {
                 _this.world.sky.tilePosition.y = -(_this.game.camera.y * 0.05) + 300;
                 _this.emitTime++;
                 _this.updatePhysics(_this.world, _this.game.physics, _this.player, _this.playerBox, _this.enemiesNonGravity, _this.enemiesPhysics, _this.world.layer02);
-                _this.updatePlayer(_this.player, _this.playerGun, _this.playerBox, _this.playerSpaceShip, _this.game.input.keyboard, _this.cursors);
-                _this.updateBullets(_this.bullets);
+                _this.updatePlayer(_this.player, _this.playerBox.playerGun, _this.playerBox, _this.playerSpaceShip, _this.game.input.keyboard, _this.cursors);
+                _this.updateBullets(_this.playerBox.bullets);
                 _this.processInput(_this.game.input);
                 _this.updateEnemies(_this.enemiesPhysics);
                 _this.updateHud(_this.playerHudIcon);
@@ -429,8 +427,8 @@ var MyGame = /** @class */ (function () {
                     player.frameName = _this.playerPrefixes[_this.selectedPlayerIndex] + "_jump.png";
                 }
                 if (keyboard.isDown(Phaser.Keyboard.CONTROL)) {
-                    if (_this.bulletIntervalElapsed(_this.game.time.now, _this.bulletTime)) {
-                        _this.fireBullet(_this.bullets.getFirstExists(false), playerBox);
+                    if (_this.bulletIntervalElapsed(_this.game.time.now, _this.playerBox.bulletTime)) {
+                        _this.fireBullet(_this.playerBox.bullets.getFirstExists(false), playerBox);
                     }
                 }
                 //if (player.isFacingRight) {
@@ -549,12 +547,10 @@ var MyGame = /** @class */ (function () {
         this.updateEnemies = function (enemiesPhysics) {
             enemiesPhysics.forEach(function (enemy) {
                 //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
-                if (enemy.body.blocked.right && enemy.isFacingRight) //.body.velocity.x > 0)
-                 {
+                if (enemy.body.blocked.right && enemy.isFacingRight) { //.body.velocity.x > 0)
                     enemy.isFacingRight = false;
                 }
-                if (enemy.body.blocked.left && !enemy.isFacingRight) //.body.velocity.x < 0)
-                 {
+                if (enemy.body.blocked.left && !enemy.isFacingRight) { //.body.velocity.x < 0)
                     enemy.isFacingRight = true;
                 }
                 if (enemy.isFacingRight) {
@@ -622,7 +618,7 @@ var MyGame = /** @class */ (function () {
             }
             return false;
         };
-        this.createPlayer = function (game, playerGun) {
+        this.createPlayer = function (game) {
             var player = _this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
             player.scale.setTo(Constants.playerDrawScale, Constants.playerDrawScale);
             player.anchor.setTo(.5, .5);
@@ -649,7 +645,7 @@ var MyGame = /** @class */ (function () {
             game.physics.enable(ship);
             ship.body.collideWorldBounds = true;
             ship.enableBody = true;
-            ship.body.allowGravity = false;
+            //ship.body.allowGravity = false;
             _this.emitter = _this.createSpaceShipExhaustEmitter(game, ship);
             return ship;
         };
@@ -681,20 +677,20 @@ var MyGame = /** @class */ (function () {
         //    gem.kill();
         //}
         this.fireBullet = function (bullet, playerBox) {
-            if (_this.game.time.now > _this.bulletTime) {
+            if (_this.game.time.now > _this.playerBox.bulletTime) {
                 //this.bullet = this.bullets.getFirstExists(false);
                 if (bullet) {
                     if (playerBox.isFacingRight) {
-                        bullet.reset(_this.playerGun.body.x + 6, _this.playerGun.body.y - 8);
+                        bullet.reset(_this.playerBox.playerGun.body.x + 6, _this.playerBox.playerGun.body.y - 8);
                         bullet.body.velocity.x = 500;
                         bullet.body.velocity.y = 0;
                     }
                     else {
-                        bullet.reset(_this.playerGun.body.x - 20, _this.playerGun.body.y - 8);
+                        bullet.reset(_this.playerBox.playerGun.body.x - 20, _this.playerBox.playerGun.body.y - 8);
                         bullet.body.velocity.x = -500;
                         bullet.body.velocity.y = 0;
                     }
-                    _this.bulletTime = _this.game.time.now + 150;
+                    _this.playerBox.bulletTime = _this.game.time.now + 150;
                 }
             }
         };

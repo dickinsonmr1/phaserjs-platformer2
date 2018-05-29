@@ -21,6 +21,12 @@ class PlayerBox {
         this.isTouchingSpring = isTouchingSpring;
         this.isFacingRight = isFacingRight;
     }
+    playerGun: Phaser.Sprite;
+    bullet: Phaser.Sprite;
+    bullets: Phaser.Group;
+    bulletTime: number = 0;
+    bulletDrawOffsetX: number = 6;
+    bulletDrawOffsetY: number = 8;
 }
 
 class EnemyBox {
@@ -62,32 +68,19 @@ class MyGame {
     playerSpaceShip;
     playerBox: PlayerBox;
 
-    playerIsInSpaceShip;
-    playerisCurrentlyTouchingSpring;
-    
-    playerGun;
-    //playerGunBullet;
-    bullet;
-    bullets;
-    bulletTime = 0;
-    bulletDrawOffsetX = 6;
-    bulletDrawOffsetY = 8;
-
     // input
     cursors;
 
     // enemy stuff
     enemy;
     enemies;
-    enemiesPhysics;
-    enemiesNonGravity;
+    enemiesPhysics: Phaser.Group;
+    enemiesNonGravity: Phaser.Group;
 
     // world stuff
     springs;    
 
     // display stuff
-    //playerDrawScale = 0.50;
-    //enemyDrawScale = 1;
     worldScale = 1;
     
     //enemySpeed = 200;
@@ -95,9 +88,6 @@ class MyGame {
     // particles
     emitter;
     emitTime;
-
-    // initialization stuff
-    //isWorldLoaded = false;
 
     // HUD
     hudGroup;
@@ -262,14 +252,14 @@ class MyGame {
 
         this.playerSpaceShip = this.createSpaceShip(game);
 
-        this.player = this.createPlayer(this.player, this.playerGun);
+        this.player = this.createPlayer(this.player);
         //this.playerIsInSpaceShip = false;
         this.playerBox = new PlayerBox(false, false, true);
 
-        this.playerGun = game.add.sprite(64, 64, 'playerGun', 'playerGun');
-        this.playerGun.anchor.setTo(0.5, 0.5);
+        this.playerBox.playerGun = game.add.sprite(64, 64, 'playerGun', 'playerGun');
+        this.playerBox.playerGun.anchor.setTo(0.5, 0.5);
 
-        game.physics.enable(this.playerGun);
+        game.physics.enable(this.playerBox.playerGun);
 
         //---------------------------------------------------------------------------------------------------
         // ENEMIES
@@ -373,13 +363,13 @@ class MyGame {
 
         // TODO: add HUD stuff here
 
-        this.bullets = game.add.group();
-        game.physics.enable(this.bullets);
-        this.bullets.enableBody = true;
-        this.bullets.allowGravity = false;
+        this.playerBox.bullets = game.add.group();
+        game.physics.enable(this.playerBox.bullets);
+        this.playerBox.bullets.enableBody = true;
+        //this.playerBox.bullets.allowGravity = false;
 
         for (var i = 0; i < 200; i++) {
-            var b = this.bullets.create(0, 0, 'playerGunBullet');
+            var b = this.playerBox.bullets.create(0, 0, 'playerGunBullet');
             b.name = 'bullet' + i;
             b.exists = false;
             b.visible = false;
@@ -402,8 +392,8 @@ class MyGame {
             this.emitTime++;
 
             this.updatePhysics(this.world, this.game.physics, this.player, this.playerBox, this.enemiesNonGravity, this.enemiesPhysics, this.world.layer02);
-            this.updatePlayer(this.player, this.playerGun, this.playerBox, this.playerSpaceShip, this.game.input.keyboard, this.cursors);
-            this.updateBullets(this.bullets);
+            this.updatePlayer(this.player, this.playerBox.playerGun, this.playerBox, this.playerSpaceShip, this.game.input.keyboard, this.cursors);
+            this.updateBullets(this.playerBox.bullets);
             this.processInput(this.game.input);
 
             this.updateEnemies(this.enemiesPhysics);
@@ -552,8 +542,8 @@ class MyGame {
             }
 
             if (keyboard.isDown(Phaser.Keyboard.CONTROL)) {
-                if(this.bulletIntervalElapsed(this.game.time.now, this.bulletTime)) {
-                    this.fireBullet(this.bullets.getFirstExists(false), playerBox);
+                if(this.bulletIntervalElapsed(this.game.time.now, this.playerBox.bulletTime)) {
+                    this.fireBullet(this.playerBox.bullets.getFirstExists(false), playerBox);
                 }                
             }
 
@@ -700,13 +690,11 @@ class MyGame {
         enemiesPhysics.forEach(function (enemy) {
             //http://www.emanueleferonato.com/2015/05/12/phaser-tutorial-html5-player-movement-as-seen-in-ipad-magick-game-using-mostly-tile-maps/
 
-            if (enemy.body.blocked.right && enemy.isFacingRight)//.body.velocity.x > 0)
-            {
+            if (enemy.body.blocked.right && enemy.isFacingRight) { //.body.velocity.x > 0)
                 enemy.isFacingRight = false;
             }
 
-            if (enemy.body.blocked.left && !enemy.isFacingRight)//.body.velocity.x < 0)
-            {
+            if (enemy.body.blocked.left && !enemy.isFacingRight) { //.body.velocity.x < 0)
                 enemy.isFacingRight = true;
             }
 
@@ -791,7 +779,7 @@ class MyGame {
         return false;
     }
 
-    createPlayer = (game, playerGun) =>  {
+    createPlayer = (game) =>  {
 
         var player = this.game.add.sprite(64, 64, 'playerSprites', 'alienBlue_front.png');
         player.scale.setTo(Constants.playerDrawScale, Constants.playerDrawScale);
@@ -827,7 +815,7 @@ class MyGame {
         game.physics.enable(ship);
         ship.body.collideWorldBounds = true;
         ship.enableBody = true;
-        ship.body.allowGravity = false;
+        //ship.body.allowGravity = false;
 
         this.emitter = this.createSpaceShipExhaustEmitter(game, ship);
 
@@ -871,21 +859,21 @@ class MyGame {
 
     fireBullet = (bullet, playerBox) => {
 
-        if (this.game.time.now > this.bulletTime) {
+        if (this.game.time.now > this.playerBox.bulletTime) {
             //this.bullet = this.bullets.getFirstExists(false);
 
             if (bullet) {
                 if (playerBox.isFacingRight) {
-                    bullet.reset(this.playerGun.body.x + 6, this.playerGun.body.y - 8);
+                    bullet.reset(this.playerBox.playerGun.body.x + 6, this.playerBox.playerGun.body.y - 8);
                     bullet.body.velocity.x = 500;
                     bullet.body.velocity.y = 0;
                 }
                 else {
-                    bullet.reset(this.playerGun.body.x - 20, this.playerGun.body.y - 8);
+                    bullet.reset(this.playerBox.playerGun.body.x - 20, this.playerBox.playerGun.body.y - 8);
                     bullet.body.velocity.x = -500;
                     bullet.body.velocity.y = 0;
                 }
-                this.bulletTime = this.game.time.now + 150;
+                this.playerBox.bulletTime = this.game.time.now + 150;
             }
         }
 
