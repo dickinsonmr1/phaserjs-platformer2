@@ -49,6 +49,12 @@ class World {
     sky: Phaser.TileSprite;
 }
 
+class HUDComponent {
+    hudGroup: Phaser.Group;
+    playerHudIcon: Phaser.Image;
+}
+
+
 class MyGame {
     
     constructor() {
@@ -82,22 +88,21 @@ class MyGame {
 
     // display stuff
     worldScale = 1;
-    
-    //enemySpeed = 200;
 
     // particles
     emitter;
     emitTime;
 
     // HUD
-    hudGroup;
-    playerHudIcon;
+
+    hudComponent: HUDComponent;
     
     // audio
     jumpsound;
     gemSound;
     keySound;
     springSound;
+    laserSound;
                 
     preload = () => {
         this.loadAudio(this.game);
@@ -113,6 +118,7 @@ class MyGame {
         game.load.audio('gemSound', 'assets/audio/coin.wav');
         game.load.audio('key', 'assets/audio/key.wav');
         game.load.audio('springSound', 'assets/audio/spring.wav');
+        game.load.audio('laser', 'assets/audio/laser5.ogg');
     }
 
     loadSprites = (game) =>  {
@@ -160,12 +166,13 @@ class MyGame {
         var sky = this.game.add.tileSprite(0, 0, 20480, 1024, 'sky');
         //sky.fixedToCamera = true;
 
-        this.hudGroup = this.game.add.group();
+        this.hudComponent = new HUDComponent();
+        this.hudComponent.hudGroup = this.game.add.group();
 
         // http://www.html5gamedevs.com/topic/6380-moving-a-camera-fixed-sprite/
-        this.playerHudIcon = this.game.add.image(0, 0, 'playerSprites', 'alienBlue_front.png');
-        this.playerHudIcon.fixedToCamera = true;
-        this.playerHudIcon.anchor.setTo(0, 0);
+        this.hudComponent.playerHudIcon = this.game.add.image(0, 0, 'playerSprites', 'alienBlue_front.png');
+        this.hudComponent.playerHudIcon.fixedToCamera = true;
+        this.hudComponent.playerHudIcon.anchor.setTo(0, 0);
         
         //hudGroup.add(playerHudIcon);
         this.enemies = this.game.add.group();
@@ -187,6 +194,8 @@ class MyGame {
         this.keySound = game.add.audio('key');
         this.springSound = game.add.audio('springSound');
         this.springSound.allowMultiple = false;
+        this.laserSound = game.add.audio('laser');
+        this.laserSound.allowMultiple = true;
     }
     
     createWorld = (worldName, game, enemies, enemiesPhysics, enemiesNonGravity, sky) => {
@@ -391,39 +400,46 @@ class MyGame {
 
             this.emitTime++;
 
-            this.updatePhysics(this.world, this.game.physics, this.player, this.playerBox, this.enemiesNonGravity, this.enemiesPhysics, this.world.layer02);
+            this.updatePhysics(this.world, this.game.physics, this.player, this.playerBox, this.playerSpaceShip, this.enemiesNonGravity, this.enemiesPhysics, this.world.layer02, this.playerBox.bullets);
             this.updatePlayer(this.player, this.playerBox.playerGun, this.playerBox, this.playerSpaceShip, this.game.input.keyboard, this.cursors);
             this.updateBullets(this.playerBox.bullets);
             this.processInput(this.game.input);
 
             this.updateEnemies(this.enemiesPhysics);
 
-            this.updateHud(this.playerHudIcon);
+            this.updateHud(this.hudComponent.playerHudIcon);
         }
     }
 
-    updatePhysics = (world, physics, player, playerBox, enemiesNonGravity, enemiesPhysics, impassableLayer) => {
+    updatePhysics = (world, physics, player, playerBox, playerSpaceShip, enemiesNonGravity, enemiesPhysics, impassableLayer, bullets) => {
         
         if (!playerBox.isInSpaceShip) {
-            physics.arcade.collide(player, world.layer02);
+            physics.arcade.collide(player, impassableLayer);
             physics.arcade.collide(player, world.layer05);
             if(!physics.arcade.collide(player, this.springs, this.playerTouchingSpringHandler, null, this)) {
                 playerBox.isCurrentlyTouchingSpring = false;
             }
 
-            physics.arcade.collide(this.playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
+            physics.arcade.collide(playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
 
             physics.arcade.collide(player, enemiesNonGravity);
             physics.arcade.collide(player, enemiesPhysics);
         }
         else {
-            physics.arcade.collide(this.playerSpaceShip, impassableLayer);
-            physics.arcade.collide(this.playerSpaceShip, world.layer05);
+            physics.arcade.collide(playerSpaceShip, impassableLayer);
+            physics.arcade.collide(playerSpaceShip, world.layer05);
 
             //physics.arcade.collide(this.playerSpaceShip, enemies);
             physics.arcade.collide(player, enemiesNonGravity);
             physics.arcade.collide(player, enemiesPhysics);
         }        
+
+        bullets.forEach(function (bullet) {
+            bullet.body.velocity.y = 0;
+        }, this);
+
+        physics.arcade.overlap(bullets, enemiesNonGravity, this.bulletTouchingEnemyHandler, null, this);
+        physics.arcade.overlap(bullets, enemiesPhysics, this.bulletTouchingEnemyHandler, null, this);
 
         //var enemiesPhysics = enemies.filter(x => x.enemyType == "physics");
         //physics.arcade.collide(enemiesPhysics, this.layer02);
@@ -455,6 +471,35 @@ class MyGame {
             this.springSound.play();
             this.playerBox.isTouchingSpring = true;
         }
+    }
+
+    /*
+    bulletTouchingEnemyHandler = (enemies, bullets) => {
+
+        bullets.forEach(function (bullet) {
+            bullet.body.velocity.x = 0;
+        }, this);
+        //if (!this.playerBox.isInSpaceShip && !this.playerBox.isTouchingSpring) {
+            //if(springSound.)
+            //if (tile.alpha > 0) {
+            //player.body.velocity.y = -650;
+            this.springSound.play();
+            //this.playerBox.isTouchingSpring = true;
+        //}
+    }
+    */
+
+    bulletTouchingEnemyHandler = (enemy, bullet) => {
+
+        enemy.kill();
+        bullet.kill();
+        //if (!this.playerBox.isInSpaceShip && !this.playerBox.isTouchingSpring) {
+            //if(springSound.)
+            //if (tile.alpha > 0) {
+            //player.body.velocity.y = -650;
+            this.springSound.play();
+            //this.playerBox.isTouchingSpring = true;
+        //}
     }
 
     playerExitingSpaceship = (player, playerSpaceShip, playerBox) => {
@@ -815,7 +860,7 @@ class MyGame {
         game.physics.enable(ship);
         ship.body.collideWorldBounds = true;
         ship.enableBody = true;
-        //ship.body.allowGravity = false;
+        ship.body.allowGravity = false;
 
         this.emitter = this.createSpaceShipExhaustEmitter(game, ship);
 
@@ -874,6 +919,7 @@ class MyGame {
                     bullet.body.velocity.y = 0;
                 }
                 this.playerBox.bulletTime = this.game.time.now + 150;
+                this.laserSound.play();
             }
         }
 

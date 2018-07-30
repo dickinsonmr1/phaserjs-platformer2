@@ -70,6 +70,11 @@ var World = /** @class */ (function () {
     }
     return World;
 }());
+var HUDComponent = /** @class */ (function () {
+    function HUDComponent() {
+    }
+    return HUDComponent;
+}());
 var MyGame = /** @class */ (function () {
     function MyGame() {
         var _this = this;
@@ -91,6 +96,7 @@ var MyGame = /** @class */ (function () {
             game.load.audio('gemSound', 'assets/audio/coin.wav');
             game.load.audio('key', 'assets/audio/key.wav');
             game.load.audio('springSound', 'assets/audio/spring.wav');
+            game.load.audio('laser', 'assets/audio/laser5.ogg');
         };
         this.loadSprites = function (game) {
             // background image
@@ -128,11 +134,12 @@ var MyGame = /** @class */ (function () {
             logo.anchor.setTo(0.5, 0.5);
             var sky = _this.game.add.tileSprite(0, 0, 20480, 1024, 'sky');
             //sky.fixedToCamera = true;
-            _this.hudGroup = _this.game.add.group();
+            _this.hudComponent = new HUDComponent();
+            _this.hudComponent.hudGroup = _this.game.add.group();
             // http://www.html5gamedevs.com/topic/6380-moving-a-camera-fixed-sprite/
-            _this.playerHudIcon = _this.game.add.image(0, 0, 'playerSprites', 'alienBlue_front.png');
-            _this.playerHudIcon.fixedToCamera = true;
-            _this.playerHudIcon.anchor.setTo(0, 0);
+            _this.hudComponent.playerHudIcon = _this.game.add.image(0, 0, 'playerSprites', 'alienBlue_front.png');
+            _this.hudComponent.playerHudIcon.fixedToCamera = true;
+            _this.hudComponent.playerHudIcon.anchor.setTo(0, 0);
             //hudGroup.add(playerHudIcon);
             _this.enemies = _this.game.add.group();
             _this.enemiesPhysics = _this.game.add.group(); // removed 324
@@ -149,6 +156,8 @@ var MyGame = /** @class */ (function () {
             _this.keySound = game.add.audio('key');
             _this.springSound = game.add.audio('springSound');
             _this.springSound.allowMultiple = false;
+            _this.laserSound = game.add.audio('laser');
+            _this.laserSound.allowMultiple = true;
         };
         this.createWorld = function (worldName, game, enemies, enemiesPhysics, enemiesNonGravity, sky) {
             // using the Tiled map editor, here is the order of the layers from back to front:
@@ -309,32 +318,37 @@ var MyGame = /** @class */ (function () {
                 _this.world.sky.tilePosition.x = -(_this.game.camera.x * 0.25);
                 _this.world.sky.tilePosition.y = -(_this.game.camera.y * 0.05) + 300;
                 _this.emitTime++;
-                _this.updatePhysics(_this.world, _this.game.physics, _this.player, _this.playerBox, _this.enemiesNonGravity, _this.enemiesPhysics, _this.world.layer02);
+                _this.updatePhysics(_this.world, _this.game.physics, _this.player, _this.playerBox, _this.playerSpaceShip, _this.enemiesNonGravity, _this.enemiesPhysics, _this.world.layer02, _this.playerBox.bullets);
                 _this.updatePlayer(_this.player, _this.playerBox.playerGun, _this.playerBox, _this.playerSpaceShip, _this.game.input.keyboard, _this.cursors);
                 _this.updateBullets(_this.playerBox.bullets);
                 _this.processInput(_this.game.input);
                 _this.updateEnemies(_this.enemiesPhysics);
-                _this.updateHud(_this.playerHudIcon);
+                _this.updateHud(_this.hudComponent.playerHudIcon);
             }
         };
-        this.updatePhysics = function (world, physics, player, playerBox, enemiesNonGravity, enemiesPhysics, impassableLayer) {
+        this.updatePhysics = function (world, physics, player, playerBox, playerSpaceShip, enemiesNonGravity, enemiesPhysics, impassableLayer, bullets) {
             if (!playerBox.isInSpaceShip) {
-                physics.arcade.collide(player, world.layer02);
+                physics.arcade.collide(player, impassableLayer);
                 physics.arcade.collide(player, world.layer05);
                 if (!physics.arcade.collide(player, _this.springs, _this.playerTouchingSpringHandler, null, _this)) {
                     playerBox.isCurrentlyTouchingSpring = false;
                 }
-                physics.arcade.collide(_this.playerSpaceShip, player, _this.playerEnteringSpaceshipCollisionHandler, null, _this);
+                physics.arcade.collide(playerSpaceShip, player, _this.playerEnteringSpaceshipCollisionHandler, null, _this);
                 physics.arcade.collide(player, enemiesNonGravity);
                 physics.arcade.collide(player, enemiesPhysics);
             }
             else {
-                physics.arcade.collide(_this.playerSpaceShip, impassableLayer);
-                physics.arcade.collide(_this.playerSpaceShip, world.layer05);
+                physics.arcade.collide(playerSpaceShip, impassableLayer);
+                physics.arcade.collide(playerSpaceShip, world.layer05);
                 //physics.arcade.collide(this.playerSpaceShip, enemies);
                 physics.arcade.collide(player, enemiesNonGravity);
                 physics.arcade.collide(player, enemiesPhysics);
             }
+            bullets.forEach(function (bullet) {
+                bullet.body.velocity.y = 0;
+            }, _this);
+            physics.arcade.overlap(bullets, enemiesNonGravity, _this.bulletTouchingEnemyHandler, null, _this);
+            physics.arcade.overlap(bullets, enemiesPhysics, _this.bulletTouchingEnemyHandler, null, _this);
             //var enemiesPhysics = enemies.filter(x => x.enemyType == "physics");
             //physics.arcade.collide(enemiesPhysics, this.layer02);
             //physics.arcade.collide(enemiesPhysics, enemiesPhysics);
@@ -359,6 +373,32 @@ var MyGame = /** @class */ (function () {
                 _this.springSound.play();
                 _this.playerBox.isTouchingSpring = true;
             }
+        };
+        /*
+        bulletTouchingEnemyHandler = (enemies, bullets) => {
+    
+            bullets.forEach(function (bullet) {
+                bullet.body.velocity.x = 0;
+            }, this);
+            //if (!this.playerBox.isInSpaceShip && !this.playerBox.isTouchingSpring) {
+                //if(springSound.)
+                //if (tile.alpha > 0) {
+                //player.body.velocity.y = -650;
+                this.springSound.play();
+                //this.playerBox.isTouchingSpring = true;
+            //}
+        }
+        */
+        this.bulletTouchingEnemyHandler = function (enemy, bullet) {
+            enemy.kill();
+            bullet.kill();
+            //if (!this.playerBox.isInSpaceShip && !this.playerBox.isTouchingSpring) {
+            //if(springSound.)
+            //if (tile.alpha > 0) {
+            //player.body.velocity.y = -650;
+            _this.springSound.play();
+            //this.playerBox.isTouchingSpring = true;
+            //}
         };
         this.playerExitingSpaceship = function (player, playerSpaceShip, playerBox) {
             playerBox.isInSpaceShip = false;
@@ -645,7 +685,7 @@ var MyGame = /** @class */ (function () {
             game.physics.enable(ship);
             ship.body.collideWorldBounds = true;
             ship.enableBody = true;
-            //ship.body.allowGravity = false;
+            ship.body.allowGravity = false;
             _this.emitter = _this.createSpaceShipExhaustEmitter(game, ship);
             return ship;
         };
@@ -691,6 +731,7 @@ var MyGame = /** @class */ (function () {
                         bullet.body.velocity.y = 0;
                     }
                     _this.playerBox.bulletTime = _this.game.time.now + 150;
+                    _this.laserSound.play();
                 }
             }
         };
