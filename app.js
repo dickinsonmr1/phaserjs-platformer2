@@ -54,6 +54,7 @@ var PlayerBox = /** @class */ (function () {
         this.bulletTime = 0;
         this.bulletDrawOffsetX = 6;
         this.bulletDrawOffsetY = 8;
+        this.hurtTime = 0;
         this.isInSpaceShip = isInSpaceShip;
         this.isTouchingSpring = isTouchingSpring;
         this.isFacingRight = isFacingRight;
@@ -97,6 +98,7 @@ var MyGame = /** @class */ (function () {
             game.load.audio('key', 'assets/audio/key.wav');
             game.load.audio('springSound', 'assets/audio/spring.wav');
             game.load.audio('laser', 'assets/audio/laser5.ogg');
+            game.load.audio('hurt', 'assets/audio/hurt.wav');
         };
         this.loadSprites = function (game) {
             // background image
@@ -115,7 +117,7 @@ var MyGame = /** @class */ (function () {
             game.load.image('sprung', 'assets/sprites/objects/sprung64.png');
             game.load.image('engineExhaust', 'assets/sprites/ships/laserblue3.png');
             game.load.image('playerGun', 'assets/sprites/player/raygunPurpleBig.png');
-            game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot.png');
+            game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot15x15.png');
         };
         this.loadTilemap = function (game) {
             // tilemap for level building
@@ -158,6 +160,8 @@ var MyGame = /** @class */ (function () {
             _this.springSound.allowMultiple = false;
             _this.laserSound = game.add.audio('laser');
             _this.laserSound.allowMultiple = true;
+            _this.hurtSound = game.add.audio('hurt');
+            _this.hurtSound.allowMultiple = false;
         };
         this.createWorld = function (worldName, game, enemies, enemiesPhysics, enemiesNonGravity, sky) {
             // using the Tiled map editor, here is the order of the layers from back to front:
@@ -307,6 +311,7 @@ var MyGame = /** @class */ (function () {
                 b.visible = false;
                 b.checkWorldBounds = true;
                 b.body.gravity.y = 0;
+                //b.scale.setTo(0.5, 0.5);
                 b.body.collideWorldBounds = true;
                 b.events.onOutOfBounds.add(_this.resetBullet, _this);
             }
@@ -334,8 +339,13 @@ var MyGame = /** @class */ (function () {
                     playerBox.isCurrentlyTouchingSpring = false;
                 }
                 physics.arcade.collide(playerSpaceShip, player, _this.playerEnteringSpaceshipCollisionHandler, null, _this);
-                physics.arcade.collide(player, enemiesNonGravity);
-                physics.arcade.collide(player, enemiesPhysics);
+                if (physics.arcade.collide(player, enemiesNonGravity, _this.playerTouchingEnemiesHandler, null, _this)
+                    || physics.arcade.collide(player, enemiesPhysics, _this.playerTouchingEnemiesHandler, null, _this)) {
+                    if (playerBox.hurtTime == 0) {
+                        _this.hurtSound.play();
+                        playerBox.hurtTime = 120;
+                    }
+                }
             }
             else {
                 physics.arcade.collide(playerSpaceShip, impassableLayer);
@@ -357,6 +367,7 @@ var MyGame = /** @class */ (function () {
             physics.arcade.collide(enemiesPhysics, enemiesPhysics);
             physics.arcade.collide(enemiesNonGravity, impassableLayer);
             physics.arcade.collide(enemiesNonGravity, enemiesNonGravity);
+            physics.arcade.collide(bullets, impassableLayer, _this.bulletTouchingImpassableLayerHandler, null, _this);
         };
         this.playerEnteringSpaceshipCollisionHandler = function (playerSpaceShip, player) {
             if (player.renderable) {
@@ -373,6 +384,14 @@ var MyGame = /** @class */ (function () {
                 _this.springSound.play();
                 _this.playerBox.isTouchingSpring = true;
             }
+        };
+        this.playerTouchingEnemiesHandler = function (player, enemies) {
+            /*
+            if (!this.playerBox.isInSpaceShip && player.playerBox.hurtTime == 0) {
+                this.hurtSound.play();
+                player.playerBox.hurtTime = 60;
+            }
+            */
         };
         /*
         bulletTouchingEnemyHandler = (enemies, bullets) => {
@@ -400,6 +419,9 @@ var MyGame = /** @class */ (function () {
             //this.playerBox.isTouchingSpring = true;
             //}
         };
+        this.bulletTouchingImpassableLayerHandler = function (bullet, layer) {
+            bullet.kill();
+        };
         this.playerExitingSpaceship = function (player, playerSpaceShip, playerBox) {
             playerBox.isInSpaceShip = false;
             player.body.velocity.y = -400;
@@ -413,6 +435,8 @@ var MyGame = /** @class */ (function () {
         this.updatePlayer = function (player, playerGun, playerBox, playerSpaceShip, keyboard, cursors) {
             if (!playerBox.isInSpaceShip) {
                 player.body.velocity.x = 0;
+                if (playerBox.hurtTime > 0)
+                    playerBox.hurtTime--;
                 if (cursors.up.isDown || keyboard.isDown(Phaser.Keyboard.W) || keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
                     if (player.body.onFloor()) {
                         player.body.velocity.y = -500;
@@ -448,9 +472,19 @@ var MyGame = /** @class */ (function () {
                     playerGun.body.y = player.body.y - 22;
                 }
                 else if (cursors.down.isDown || keyboard.isDown(Phaser.Keyboard.S)) {
+                    playerGun.anchor.setTo(.5, .5);
+                    if (playerBox.isFacingRight) {
+                        playerGun.body.x = player.body.x + 20;
+                    }
+                    else {
+                        playerGun.body.x = player.body.x - 45;
+                    }
                     if (player.body.onFloor()) {
                         player.frameName = _this.playerPrefixes[_this.selectedPlayerIndex] + "_duck.png";
                         playerGun.body.y = player.body.y - 10;
+                    }
+                    else {
+                        playerGun.body.y = player.body.y - 22;
                     }
                 }
                 else {
@@ -721,14 +755,18 @@ var MyGame = /** @class */ (function () {
                 //this.bullet = this.bullets.getFirstExists(false);
                 if (bullet) {
                     if (playerBox.isFacingRight) {
-                        bullet.reset(_this.playerBox.playerGun.body.x + 6, _this.playerBox.playerGun.body.y - 8);
+                        bullet.reset(_this.playerBox.playerGun.body.x + 30, _this.playerBox.playerGun.body.y + 20);
                         bullet.body.velocity.x = 500;
                         bullet.body.velocity.y = 0;
+                        //bullet.scale.setTo(0.5, 0.5);
+                        //bullet.anchor.setTo(0.5, 0.5);
                     }
                     else {
-                        bullet.reset(_this.playerBox.playerGun.body.x - 20, _this.playerBox.playerGun.body.y - 8);
+                        bullet.reset(_this.playerBox.playerGun.body.x, _this.playerBox.playerGun.body.y + 20);
                         bullet.body.velocity.x = -500;
                         bullet.body.velocity.y = 0;
+                        //bullet.scale.setTo(0.5, 0.5);
+                        //bullet.anchor.setTo(0.5, 0.5);
                     }
                     _this.playerBox.bulletTime = _this.game.time.now + 150;
                     _this.laserSound.play();

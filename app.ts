@@ -27,6 +27,7 @@ class PlayerBox {
     bulletTime: number = 0;
     bulletDrawOffsetX: number = 6;
     bulletDrawOffsetY: number = 8;
+    hurtTime: number = 0;
 }
 
 class EnemyBox {
@@ -94,7 +95,6 @@ class MyGame {
     emitTime;
 
     // HUD
-
     hudComponent: HUDComponent;
     
     // audio
@@ -103,6 +103,7 @@ class MyGame {
     keySound;
     springSound;
     laserSound;
+    hurtSound;
                 
     preload = () => {
         this.loadAudio(this.game);
@@ -119,6 +120,7 @@ class MyGame {
         game.load.audio('key', 'assets/audio/key.wav');
         game.load.audio('springSound', 'assets/audio/spring.wav');
         game.load.audio('laser', 'assets/audio/laser5.ogg');
+        game.load.audio('hurt', 'assets/audio/hurt.wav');
     }
 
     loadSprites = (game) =>  {
@@ -141,7 +143,7 @@ class MyGame {
         game.load.image('engineExhaust', 'assets/sprites/ships/laserblue3.png');
 
         game.load.image('playerGun', 'assets/sprites/player/raygunPurpleBig.png');
-        game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot.png');
+        game.load.image('playerGunBullet', 'assets/sprites/player/laserPurpleDot15x15.png');
     }
 
     loadTilemap = (game) =>  {
@@ -196,6 +198,8 @@ class MyGame {
         this.springSound.allowMultiple = false;
         this.laserSound = game.add.audio('laser');
         this.laserSound.allowMultiple = true;
+        this.hurtSound = game.add.audio('hurt');
+        this.hurtSound.allowMultiple = false;
     }
     
     createWorld = (worldName, game, enemies, enemiesPhysics, enemiesNonGravity, sky) => {
@@ -384,6 +388,7 @@ class MyGame {
             b.visible = false;
             b.checkWorldBounds = true;
             b.body.gravity.y = 0;
+            //b.scale.setTo(0.5, 0.5);
             b.body.collideWorldBounds = true;
             b.events.onOutOfBounds.add(this.resetBullet, this);
         }
@@ -422,8 +427,13 @@ class MyGame {
 
             physics.arcade.collide(playerSpaceShip, player, this.playerEnteringSpaceshipCollisionHandler, null, this);
 
-            physics.arcade.collide(player, enemiesNonGravity);
-            physics.arcade.collide(player, enemiesPhysics);
+            if(physics.arcade.collide(player, enemiesNonGravity, this.playerTouchingEnemiesHandler, null, this)
+            || physics.arcade.collide(player, enemiesPhysics, this.playerTouchingEnemiesHandler, null, this)) {
+                if(playerBox.hurtTime == 0) {
+                    this.hurtSound.play();
+                    playerBox.hurtTime = 120;
+                }
+            }
         }
         else {
             physics.arcade.collide(playerSpaceShip, impassableLayer);
@@ -439,7 +449,7 @@ class MyGame {
         }, this);
 
         physics.arcade.overlap(bullets, enemiesNonGravity, this.bulletTouchingEnemyHandler, null, this);
-        physics.arcade.overlap(bullets, enemiesPhysics, this.bulletTouchingEnemyHandler, null, this);
+        physics.arcade.overlap(bullets, enemiesPhysics, this.bulletTouchingEnemyHandler, null, this);        
 
         //var enemiesPhysics = enemies.filter(x => x.enemyType == "physics");
         //physics.arcade.collide(enemiesPhysics, this.layer02);
@@ -451,6 +461,8 @@ class MyGame {
 
         physics.arcade.collide(enemiesNonGravity, impassableLayer);
         physics.arcade.collide(enemiesNonGravity, enemiesNonGravity);
+
+        physics.arcade.collide(bullets, impassableLayer, this.bulletTouchingImpassableLayerHandler, null, this);
     }
 
     playerEnteringSpaceshipCollisionHandler = (playerSpaceShip, player) => {
@@ -471,6 +483,16 @@ class MyGame {
             this.springSound.play();
             this.playerBox.isTouchingSpring = true;
         }
+    }
+
+    playerTouchingEnemiesHandler = (player, enemies) => {
+
+        /*
+        if (!this.playerBox.isInSpaceShip && player.playerBox.hurtTime == 0) {
+            this.hurtSound.play();
+            player.playerBox.hurtTime = 60;
+        }
+        */
     }
 
     /*
@@ -502,6 +524,11 @@ class MyGame {
         //}
     }
 
+    bulletTouchingImpassableLayerHandler = (bullet, layer) => {
+
+        bullet.kill();
+    }
+
     playerExitingSpaceship = (player, playerSpaceShip, playerBox) => {
         playerBox.isInSpaceShip = false;
         player.body.velocity.y = -400;
@@ -519,6 +546,8 @@ class MyGame {
         if (!playerBox.isInSpaceShip)
         {
             player.body.velocity.x = 0;
+
+            if(playerBox.hurtTime > 0) playerBox.hurtTime--;
 
             if (cursors.up.isDown || keyboard.isDown(Phaser.Keyboard.W) || keyboard.isDown(Phaser.Keyboard.SPACEBAR)) {
                 if (player.body.onFloor()) {
@@ -564,10 +593,22 @@ class MyGame {
                 playerGun.body.y = player.body.y - 22;
             }
             else if (cursors.down.isDown || keyboard.isDown(Phaser.Keyboard.S)) {
+          
+                playerGun.anchor.setTo(.5, .5);
+
+                if(playerBox.isFacingRight) {
+                    playerGun.body.x = player.body.x + 20;
+                }   
+                else {
+                    playerGun.body.x = player.body.x - 45;
+                }
+
                 if (player.body.onFloor()) {
                     player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_duck.png";
-
                     playerGun.body.y = player.body.y - 10;
+                }
+                else{
+                    playerGun.body.y = player.body.y - 22;
                 }
             }
             else {
@@ -575,7 +616,6 @@ class MyGame {
                 player.animations.stop();
                 player.frameName = this.playerPrefixes[this.selectedPlayerIndex] + "_stand.png";
                 //player.frame = 4;\
-
                 playerGun.body.y = player.body.y - 22;
             }
 
@@ -909,14 +949,18 @@ class MyGame {
 
             if (bullet) {
                 if (playerBox.isFacingRight) {
-                    bullet.reset(this.playerBox.playerGun.body.x + 6, this.playerBox.playerGun.body.y - 8);
+                    bullet.reset(this.playerBox.playerGun.body.x + 30, this.playerBox.playerGun.body.y + 20);
                     bullet.body.velocity.x = 500;
                     bullet.body.velocity.y = 0;
+                    //bullet.scale.setTo(0.5, 0.5);
+                    //bullet.anchor.setTo(0.5, 0.5);
                 }
                 else {
-                    bullet.reset(this.playerBox.playerGun.body.x - 20, this.playerBox.playerGun.body.y - 8);
+                    bullet.reset(this.playerBox.playerGun.body.x, this.playerBox.playerGun.body.y + 20);
                     bullet.body.velocity.x = -500;
                     bullet.body.velocity.y = 0;
+                    //bullet.scale.setTo(0.5, 0.5);
+                    //bullet.anchor.setTo(0.5, 0.5);
                 }
                 this.playerBox.bulletTime = this.game.time.now + 150;
                 this.laserSound.play();
